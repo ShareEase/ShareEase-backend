@@ -172,6 +172,38 @@ exports.loginFacebook = (req, res, next) => {
   })(req, res, next);
 };
 
+exports.loginGoogleStore = async (req, res, next) => {
+  const { token, user } = req.body;
+  if (!token || !user) {
+    return res.status(400).send({ error: "Token and user data are required" });
+  }
+  const { id, name, email, profilePicture, permissionLevel } = user;
+  try {
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      existingUser.token = token;
+      existingUser.refresh_token = refresh_token;
+      await existingUser.save();
+    } else {
+      const newUser = new User({
+        id,
+        name,
+        email,
+        profilePicture,
+        permissionLevel,
+        token,
+        refresh_token
+      });
+      await newUser.save();
+    }
+
+    return res.status(200).send({ message: "User logged in successfully" });
+  } catch (err) {
+    return res.status(500).send({ error: "Internal server error", err });
+  }
+};
+
 /* exports.addPhoneNumberAndSendOtp = (req, res) => {
   const userId = req.body.userId;
   const phoneNumber = req.body.phoneNumber;

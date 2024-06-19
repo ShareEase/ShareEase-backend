@@ -18,6 +18,7 @@ router.get(
 );
 router.get("/facebook/callback", AuthController.loginFacebook);
 router.post("/register", AuthController.registerUser);
+router.post("/googleLoginStore", AuthController.loginGoogleStore);
 router.post("/login", AuthController.loginUser);
 
 router.post("/refresh", [
