@@ -103,6 +103,7 @@ exports.loginUser = (req, res) => {
             email: user.email,
             profilePicture: user.profilePicture,
             permissionLevel: user.permissionLevel,
+            phoneNumberVerified: user.phoneNumberVerified,
           };
           this.generateTokens(payload)
             .then(([token, refresh_token]) => {
@@ -250,6 +251,7 @@ exports.verifyCode = (req, res) => {
       }
 
       user.code = code;
+      user.phoneNumberVerified = true;
       user.save().then(async (updatedUser) => {
         client.otp
           .verify({

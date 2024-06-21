@@ -57,6 +57,11 @@ const userSchema = new Schema({
     required: false,
     default: ""
   },
+  phoneNumberVerified:{
+    type: Boolean,
+    required: false,
+    default: false
+  },
 
   permissionLevel: Number
 });
