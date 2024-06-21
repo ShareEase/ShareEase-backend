@@ -7,6 +7,12 @@ const mongoose = require("mongoose");
 var User = mongoose.model("User");
 const UsersController = require("../../users/controllers/users.controller");
 require("dotenv").config();
+const { UniClient } = require("uni-sdk");
+
+const client = new UniClient({
+  accessKeyId: process.env.UNIMTX_API_KEY,
+});
+
 exports.generateTokens = (user) => {
   return new Promise((resolve, reject) => {
     let refreshId = user.id + process.env.JWT_SECRET;
@@ -193,7 +199,7 @@ exports.loginGoogleStore = async (req, res, next) => {
         profilePicture,
         permissionLevel,
         token,
-        refresh_token
+        refresh_token,
       });
       await newUser.save();
     }
@@ -204,7 +210,7 @@ exports.loginGoogleStore = async (req, res, next) => {
   }
 };
 
-/* exports.addPhoneNumberAndSendOtp = (req, res) => {
+exports.addPhoneNumberAndSendOtp = (req, res) => {
   const userId = req.body.userId;
   const phoneNumber = req.body.phoneNumber;
 
@@ -216,10 +222,51 @@ exports.loginGoogleStore = async (req, res, next) => {
 
       user.phoneNumber = phoneNumber;
       user.save().then(async (updatedUser) => {
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        client.otp
+          .send({
+            to: phoneNumber,
+            channel: "whatsapp",
+          })
+          .then((ret) => {
+            return res
+              .status(200)
+              .json({ message: "OTP sent successfully", ret });
+          });
       });
     })
     .catch((err) => {
       res.status(500).json({ error: "Server error", details: err });
     });
-}; */
+};
+exports.verifyCode = (req, res) => {
+  const userId = req.body.userId;
+  const phoneNumber = req.body.phoneNumber;
+  const code = req.body.code;
+
+  User.findOne({ _id: userId })
+    .then((user) => {
+      if (!user) {
+        return res.status(404).json({ auth: "User not found" });
+      }
+
+      user.code = code;
+      user.save().then(async (updatedUser) => {
+        client.otp
+          .verify({
+            to: phoneNumber,
+            code: code,
+          })
+          .then((ret) => {
+            if (!ret.valid) {
+              return res.status(400).json({ message: "Invalid OTP" });
+            }
+            return res
+              .status(200)
+              .json({ message: "OTP verified successfully", ret });
+          });
+      });
+    })
+    .catch((err) => {
+      res.status(500).json({ error: "Server error", details: err });
+    });
+};

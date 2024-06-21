@@ -30,7 +30,6 @@ module.exports = passport => {
         .catch(err => console.log(err));
     })
   );
-  console.log(process.env.GOOGLE_CLIENT_ID,'dhjadnw');
   passport.use(
     new GoogleStrategy(
       {

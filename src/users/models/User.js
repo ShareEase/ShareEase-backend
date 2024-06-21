@@ -34,11 +34,28 @@ const userSchema = new Schema({
   },
   OAuthProvider: {
     type: String,
-    required: false
+    required: false,
+    default: ""
+  },
+  token:{
+    type: String,
+    required: false,
+    default: ""
   },
   OAuthId: {
     type: String,
-    required: false
+    required: false,
+    default: ""
+  },
+  phoneNumber: {
+    type: String,
+    required: false,
+    default: ""
+  },
+  code:{
+    type: String,
+    required: false,
+    default: ""
   },
 
   permissionLevel: Number
