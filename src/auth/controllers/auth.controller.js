@@ -111,6 +111,7 @@ exports.loginUser = (req, res) => {
                 success: true,
                 token: "Bearer " + token,
                 refresh_token: refresh_token,
+                user,
               });
             })
             .catch((err) => {
