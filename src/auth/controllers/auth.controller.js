@@ -190,22 +190,43 @@ exports.loginGoogleStore = async (req, res, next) => {
 
     if (existingUser) {
       existingUser.token = token;
-      existingUser.refresh_token = refresh_token;
-      await existingUser.save();
+      existingUser.OAuthId = id;
+      await existingUser.save().then(async (user) => {
+        await this.generateTokens(user)
+          .then(([token]) => {
+            res.status(200).json({
+              success: true,
+              message: "User logged in successfully",
+              token: "Bearer " + token,
+            });
+          })
+          .catch((err) => {
+            return res.status(400).send({ error: "Error", err: err });
+          });
+      });
     } else {
       const newUser = new User({
-        id,
         name,
         email,
         profilePicture,
         permissionLevel,
         token,
-        refresh_token,
+        OAuthId: id,
       });
-      await newUser.save();
+      await newUser.save().then(async (user) => {
+        await this.generateTokens(user)
+          .then(([token]) => {
+            res.status(200).json({
+              success: true,
+              message: "User logged in successfully",
+              token: "Bearer " + token,
+            });
+          })
+          .catch((err) => {
+            return res.status(400).send({ error: "Error", err: err });
+          });
+      });
     }
-
-    return res.status(200).send({ message: "User logged in successfully" });
   } catch (err) {
     return res.status(500).send({ error: "Internal server error", err });
   }
