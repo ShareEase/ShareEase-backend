@@ -1,5 +1,6 @@
 const AWS = require("aws-sdk");
 const uuid = require("uuid").v4;
+const { UniClient } = require("uni-sdk");
 
 AWS.config.update({
   accessKeyId: process.env.S3_ACCESS_KEY,
@@ -8,6 +9,10 @@ AWS.config.update({
 });
 
 const s3 = new AWS.S3();
+
+const client = new UniClient({
+  accessKeyId: process.env.UNIMTX_API_KEY,
+});
 
 exports.uploadImage = (file, callback) => {
   const fileExtension = file.originalname.split(".").pop();
@@ -28,4 +33,22 @@ exports.uploadImage = (file, callback) => {
       callback(null, data.Location);
     }
   });
+};
+
+exports.sendInviteMessage = async (phoneNumber) => {
+  try {
+    client.messages
+      .send({
+        to: phoneNumber,
+        templateId: "pub_otp_en_basic",
+      })
+      .then((response) => {
+        return response;
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  } catch (error) {
+    throw new Error(error.message);
+  }
 };

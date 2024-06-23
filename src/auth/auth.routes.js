@@ -28,7 +28,11 @@ router.post("/refresh", [
   AuthController.refresh_token,
 ]);
 
-router.post("/phoneNumber",AuthController.addPhoneNumberAndSendOtp);
-router.post("/verifyCode",AuthController.verifyCode);
+router.post(
+  "/phoneNumber",
+  AuthMiddleware.JwtNeeded,
+  AuthController.addPhoneNumberAndSendOtp
+);
+router.post("/verifyCode", AuthMiddleware.JwtNeeded, AuthController.verifyCode);
 
 module.exports = router;
