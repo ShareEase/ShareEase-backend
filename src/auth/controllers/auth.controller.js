@@ -108,7 +108,7 @@ exports.loginUser = (req, res) => {
           this.generateTokens(payload)
             .then(([token]) => {
               User.findByIdAndUpdate(user.id, { token: token }, { new: true })
-                .then(updatedUser => {
+                .then((updatedUser) => {
                   res.status(200).json({
                     success: true,
                     message: "User logged in successfully",
@@ -117,7 +117,9 @@ exports.loginUser = (req, res) => {
                   });
                 })
                 .catch((err) => {
-                  return res.status(500).json({ error: "Error saving token", err: err });
+                  return res
+                    .status(500)
+                    .json({ error: "Error saving token", err: err });
                 });
             })
             .catch((err) => {
@@ -262,23 +264,36 @@ exports.verifyCode = (req, res) => {
         return res.status(404).json({ auth: "User not found" });
       }
 
-      user.code = code;
-      user.phoneNumberVerified = true;
-      user.save().then(async (updatedUser) => {
-        client.otp
-          .verify({
-            to: phoneNumber,
-            code: code,
-          })
-          .then((ret) => {
-            if (!ret.valid) {
-              return res.status(400).json({ message: "Invalid OTP" });
-            }
-            return res
-              .status(200)
-              .json({ message: "OTP verified successfully", ret });
-          });
-      });
+      client.otp
+        .verify({
+          to: phoneNumber,
+          code: code,
+        })
+        .then((ret) => {
+          if (!ret.valid) {
+            return res.status(400).json({ message: "Invalid OTP" });
+          }
+
+          user.code = code;
+          user.phoneNumberVerified = true;
+
+          user
+            .save()
+            .then((updatedUser) => {
+              return res.status(200).json({
+                message: "OTP verified successfully",
+                user: updatedUser,
+              });
+            })
+            .catch((err) => {
+              res
+                .status(500)
+                .json({ error: "Error updating user", details: err });
+            });
+        })
+        .catch((err) => {
+          res.status(500).json({ error: "Error verifying OTP", details: err });
+        });
     })
     .catch((err) => {
       res.status(500).json({ error: "Server error", details: err });
