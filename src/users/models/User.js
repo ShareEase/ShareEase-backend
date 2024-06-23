@@ -62,6 +62,11 @@ const userSchema = new Schema({
     required: false,
     default: false
   },
+  groups: [{
+    type: Schema.Types.ObjectId,
+    ref: 'Group',
+    required: false
+  }],
 
   permissionLevel: Number
 });

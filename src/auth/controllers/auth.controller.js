@@ -106,13 +106,19 @@ exports.loginUser = (req, res) => {
             phoneNumberVerified: user.phoneNumberVerified,
           };
           this.generateTokens(payload)
-            .then(([token, refresh_token]) => {
-              res.status(200).json({
-                success: true,
-                token: "Bearer " + token,
-                refresh_token: refresh_token,
-                user,
-              });
+            .then(([token]) => {
+              User.findByIdAndUpdate(user.id, { token: token }, { new: true })
+                .then(updatedUser => {
+                  res.status(200).json({
+                    success: true,
+                    message: "User logged in successfully",
+                    token: "Bearer " + token,
+                    user: updatedUser,
+                  });
+                })
+                .catch((err) => {
+                  return res.status(500).json({ error: "Error saving token", err: err });
+                });
             })
             .catch((err) => {
               return res.status(400).send({ error: "Error", err: err });
