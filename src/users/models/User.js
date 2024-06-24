@@ -4,75 +4,77 @@ const Schema = mongoose.Schema;
 const userSchema = new Schema({
   name: {
     type: String,
-    required: true
+    required: true,
   },
   familyname: {
     type: String,
-    required: false
+    required: false,
   },
   email: {
     type: String,
-    required: true
+    required: true,
   },
   profilePicture: {
     // link
     type: String,
     required: false,
-    default: ""
+    default: "",
   },
   password: {
     type: String,
-    required: true,
-    select: false
+    required: false,
+    select: false,
   },
   date: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   google: {
-    googleId: { type: String, required: false }
+    googleId: { type: String, required: false },
   },
   OAuthProvider: {
     type: String,
     required: false,
-    default: ""
+    default: "",
   },
-  token:{
+  token: {
     type: String,
     required: false,
-    default: ""
+    default: "",
   },
   OAuthId: {
     type: String,
     required: false,
-    default: ""
+    default: "",
   },
   phoneNumber: {
     type: String,
     required: false,
-    default: ""
+    default: "",
   },
-  code:{
+  code: {
     type: String,
     required: false,
-    default: ""
+    default: "",
   },
-  phoneNumberVerified:{
+  phoneNumberVerified: {
     type: Boolean,
     required: false,
-    default: false
+    default: false,
   },
-  groups: [{
-    type: Schema.Types.ObjectId,
-    ref: 'Group',
-    required: false
-  }],
+  groups: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Group",
+      required: false,
+    },
+  ],
 
-  permissionLevel: Number
+  permissionLevel: Number,
 });
 
 // General Function for a model
-userSchema.statics.findByEmail = function(email) {
+userSchema.statics.findByEmail = function (email) {
   return this.find({ email: email });
 };
 /*
@@ -85,17 +87,17 @@ userSchema.statics.findById = function(id) {
   });
 };
 */
-userSchema.statics.create = function(dataEntity) {
+userSchema.statics.create = function (dataEntity) {
   const new_entity = new this(dataEntity);
   return new_entity.save();
 };
 
-userSchema.statics.list = function(perPage, page) {
+userSchema.statics.list = function (perPage, page) {
   return new Promise((resolve, reject) => {
     this.find()
       .limit(perPage)
       .skip(perPage * page)
-      .exec(function(err, entities) {
+      .exec(function (err, entities) {
         if (err) {
           reject(err);
         } else {
@@ -105,9 +107,9 @@ userSchema.statics.list = function(perPage, page) {
   });
 };
 
-userSchema.statics.removeById = function(id) {
+userSchema.statics.removeById = function (id) {
   return new Promise((resolve, reject) => {
-    this.deleteOne({ _id: id }, err => {
+    this.deleteOne({ _id: id }, (err) => {
       if (err) {
         reject(err);
       } else {
@@ -117,16 +119,16 @@ userSchema.statics.removeById = function(id) {
   });
 };
 
-userSchema.statics.patch = function(id, userData) {
+userSchema.statics.patch = function (id, userData) {
   delete userData["permissionLevel"];
   delete userData["id"];
   return new Promise((resolve, reject) => {
-    this.findById(id, function(err, user) {
+    this.findById(id, function (err, user) {
       if (err) reject(err);
       for (let i in userData) {
         user[i] = userData[i];
       }
-      user.save(function(err, updatedUser) {
+      user.save(function (err, updatedUser) {
         if (err) return reject(err);
         resolve(updatedUser);
       });
