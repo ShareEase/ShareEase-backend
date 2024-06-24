@@ -9,6 +9,10 @@ router.post("/create", [
   AuthMiddleware.validJWTNeeded,
   GroupsController.create,
 ]);
+router.post("/invite", [
+  AuthMiddleware.validJWTNeeded,
+  GroupsController.acceptInvite,
+]);
 router.get("/list/:userId", [
   AuthMiddleware.validJWTNeeded,
   GroupsController.listUserGroups,

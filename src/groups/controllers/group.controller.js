@@ -32,7 +32,11 @@ exports.create = (req, res) => {
             { new: true }
           )
             .then(() => {
-              res.status(201).json(group);
+              res.status(201).json({
+                success: true,
+                message: "Group created successfully",
+                group: group,
+              });
             })
             .catch((err) => {
               res.status(500).json({ error: "Error updating user", err: err });
@@ -98,7 +102,11 @@ exports.listUserGroups = async (req, res) => {
       },
     ]).exec();
 
-    res.status(200).json(groups);
+    res.status(200).json({
+      success: true,
+      message: "Groups fetched successfully",
+      groups: groups,
+    });
   } catch (err) {
     res.status(500).json({ error: "Error fetching groups", err });
   }
@@ -120,7 +128,11 @@ exports.update = (req, res) => {
 
       Group.findByIdAndUpdate(groupId, updatedGroupBody, { new: true })
         .then((updatedGroup) => {
-          res.status(200).json(updatedGroup);
+          res.status(200).json({
+            success: true,
+            message: "Group updated successfully",
+            group: updatedGroup,
+          });
         })
         .catch((err) => {
           res.status(500).json({ error: "Error updating group", err: err });
@@ -158,7 +170,7 @@ exports.remove = (req, res) => {
             { new: true }
           )
             .then(() => {
-              res.status(200).json({ message: "Group deleted successfully" });
+              res.status(200).json({ success:true ,message: "Group deleted successfully" });
             })
             .catch((err) => {
               res.status(500).json({ error: "Error updating user", err: err });
@@ -166,6 +178,76 @@ exports.remove = (req, res) => {
         })
         .catch((err) => {
           res.status(500).json({ error: "Error deleting group", err: err });
+        });
+    })
+    .catch((err) => {
+      res.status(500).json({ error: "Error finding group", err: err });
+    });
+};
+
+exports.acceptInvite = (req, res) => {
+  const { userId, groupId } = req.body;
+
+  Group.findById(groupId)
+    .then((group) => {
+      if (!group) {
+        return res.status(404).json({ error: "Group not found" });
+      }
+      if (group.members.includes(userId)) {
+        return res.status(400).json({ error: "User already in group" });
+      }
+      group.members.push(userId);
+      group
+        .save()
+        .then(() => {
+          User.findByIdAndUpdate(
+            userId,
+            { $push: { groups: groupId } },
+            { new: true }
+          )
+            .then(() => {
+              Group.findById(groupId)
+                .then((updatedGroup) => {
+                  User.find({ _id: { $in: updatedGroup.members } })
+                    .then((users) => {
+                      const groupWithMemberDetails = {
+                        ...updatedGroup.toObject(),
+                        members: users.map((user) => {
+                          return {
+                            _id: user._id,
+                            name: user.name,
+                            profilePicture: user.profilePicture,
+                            isCreator: user._id.toString() === updatedGroup.creator_id.toString(),
+                          };
+                        }),
+                      };
+                      res.status(200).json({
+                        success: true,
+                        message: "User added successfully",
+                        group: groupWithMemberDetails,
+                      });
+                    })
+                    .catch((err) => {
+                      res
+                        .status(500)
+                        .json({
+                          error: "Error fetching user details",
+                          err: err,
+                        });
+                    });
+                })
+                .catch((err) => {
+                  res
+                    .status(500)
+                    .json({ error: "Error finding updated group", err: err });
+                });
+            })
+            .catch((err) => {
+              res.status(500).json({ error: "Error updating user", err: err });
+            });
+        })
+        .catch((err) => {
+          res.status(500).json({ error: "Error updating group", err: err });
         });
     })
     .catch((err) => {
