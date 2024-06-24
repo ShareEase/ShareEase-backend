@@ -15,13 +15,15 @@ exports.create = (req, res) => {
     const { name, tag, creator_id } = req.body;
     const groupImageFile = req.file;
 
-    const createGroup = (imageUrl = null) => {
+    const createGroup = async (imageUrl = null) => {
+      const { name } = await User.findById(creator_id);
       const newGroup = {
         name: name,
         groupImageFile: imageUrl,
         tag: tag,
         creator_id: creator_id,
         members: [creator_id],
+        creator_name: name,
       };
 
       Group.create(newGroup)
@@ -170,7 +172,9 @@ exports.remove = (req, res) => {
             { new: true }
           )
             .then(() => {
-              res.status(200).json({ success:true ,message: "Group deleted successfully" });
+              res
+                .status(200)
+                .json({ success: true, message: "Group deleted successfully" });
             })
             .catch((err) => {
               res.status(500).json({ error: "Error updating user", err: err });
@@ -217,7 +221,9 @@ exports.acceptInvite = (req, res) => {
                             _id: user._id,
                             name: user.name,
                             profilePicture: user.profilePicture,
-                            isCreator: user._id.toString() === updatedGroup.creator_id.toString(),
+                            isCreator:
+                              user._id.toString() ===
+                              updatedGroup.creator_id.toString(),
                           };
                         }),
                       };
@@ -228,12 +234,10 @@ exports.acceptInvite = (req, res) => {
                       });
                     })
                     .catch((err) => {
-                      res
-                        .status(500)
-                        .json({
-                          error: "Error fetching user details",
-                          err: err,
-                        });
+                      res.status(500).json({
+                        error: "Error fetching user details",
+                        err: err,
+                      });
                     });
                 })
                 .catch((err) => {

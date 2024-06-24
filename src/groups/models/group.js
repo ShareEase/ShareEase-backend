@@ -21,6 +21,10 @@ const groupSchema = new Schema({
     ref: 'User',
     required: true
   },
+  creator_name:{
+    type: String,
+    required: false
+  },
   members: [{
     type: Schema.Types.ObjectId,
     ref: 'User',
