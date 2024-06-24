@@ -6,6 +6,7 @@ const multer = require("multer");
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage }).single("groupImageFile");
+
 exports.create = (req, res) => {
   upload(req, res, (err) => {
     if (err) {
@@ -13,16 +14,11 @@ exports.create = (req, res) => {
     }
     const { name, tag, creator_id } = req.body;
     const groupImageFile = req.file;
-    if (!groupImageFile) {
-      return res.status(400).json({ error: "No image file provided" });
-    }
-    uploadImage(groupImageFile, (err, url) => {
-      if (err)
-        return res.status(500).json({ error: "Image upload failed", err });
 
+    const createGroup = (imageUrl = null) => {
       const newGroup = {
         name: name,
-        groupImageFile: url,
+        groupImageFile: imageUrl,
         tag: tag,
         creator_id: creator_id,
         members: [creator_id],
@@ -45,20 +41,67 @@ exports.create = (req, res) => {
         .catch((err) => {
           res.status(500).json({ error: "Error creating group", err: err });
         });
-    });
+    };
+
+    if (groupImageFile) {
+      uploadImage(groupImageFile, (err, url) => {
+        if (err)
+          return res.status(500).json({ error: "Image upload failed", err });
+        createGroup(url);
+      });
+    } else {
+      createGroup();
+    }
   });
 };
 
-exports.listUserGroups = (req, res) => {
+exports.listUserGroups = async (req, res) => {
   const { userId } = req.params;
+  try {
+    await Group.createIndexes({ creator_id: 1 });
+    await User.createIndexes({ _id: 1 });
 
-  Group.find({ members: userId })
-    .then((groups) => {
-      res.status(200).json(groups);
-    })
-    .catch((err) => {
-      res.status(500).json({ error: "Error fetching groups", err: err });
-    });
+    const groups = await Group.aggregate([
+      { $match: { creator_id: mongoose.Types.ObjectId(userId) } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "members",
+          foreignField: "_id",
+          as: "members",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                profilePicture: 1,
+              },
+            },
+          ],
+        },
+      },
+      {
+        $addFields: {
+          members: {
+            $map: {
+              input: "$members",
+              as: "member",
+              in: {
+                _id: "$$member._id",
+                name: "$$member.name",
+                profilePicture: "$$member.profilePicture",
+                isCreator: { $eq: ["$$member._id", "$creator_id"] },
+              },
+            },
+          },
+        },
+      },
+    ]).exec();
+
+    res.status(200).json(groups);
+  } catch (err) {
+    res.status(500).json({ error: "Error fetching groups", err });
+  }
 };
 
 exports.update = (req, res) => {
@@ -69,20 +112,12 @@ exports.update = (req, res) => {
     const { groupId } = req.params;
     const updatedGroupBody = req.body;
     const groupImageFile = req.file;
-    if (groupImageFile) {
-      uploadImage(groupImageFile, (err, url) => {
-        if (err) return res.status(500).json({ error: "Image upload failed" });
 
-        updatedGroupBody.groupImageFile = url;
-        Group.findByIdAndUpdate(groupId, updatedGroupBody, { new: true })
-          .then((updatedGroup) => {
-            res.status(200).json(updatedGroup);
-          })
-          .catch((err) => {
-            res.status(500).json({ error: "Error updating group", err: err });
-          });
-      });
-    } else {
+    const updateGroup = (imageUrl = null) => {
+      if (imageUrl) {
+        updatedGroupBody.groupImageFile = imageUrl;
+      }
+
       Group.findByIdAndUpdate(groupId, updatedGroupBody, { new: true })
         .then((updatedGroup) => {
           res.status(200).json(updatedGroup);
@@ -90,6 +125,15 @@ exports.update = (req, res) => {
         .catch((err) => {
           res.status(500).json({ error: "Error updating group", err: err });
         });
+    };
+
+    if (groupImageFile) {
+      uploadImage(groupImageFile, (err, url) => {
+        if (err) return res.status(500).json({ error: "Image upload failed" });
+        updateGroup(url);
+      });
+    } else {
+      updateGroup();
     }
   });
 };
