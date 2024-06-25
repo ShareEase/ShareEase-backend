@@ -12,7 +12,7 @@ exports.create = (req, res) => {
     if (err) {
       return res.status(500).json({ error: "Error uploading file" });
     }
-    const { name, tag, creator_id ,groupImageFile} = req.body;
+    const { name, tag, creator_id, groupImageFile } = req.body;
 
     const createGroup = async (imageUrl = null) => {
       const userInfo = await User.findById(creator_id);
@@ -49,11 +49,11 @@ exports.create = (req, res) => {
     };
 
     if (groupImageFile && groupImageFile.data) {
-      const buffer = Buffer.from(groupImageFile.data, 'base64');
+      const buffer = Buffer.from(groupImageFile.data, "base64");
       const tempFile = {
         buffer: buffer,
         originalname: groupImageFile.name,
-        mimetype: groupImageFile.type
+        mimetype: groupImageFile.type,
       };
       uploadImage(tempFile, (err, url) => {
         if (err)
@@ -157,109 +157,98 @@ exports.update = (req, res) => {
   });
 };
 
-exports.remove = (req, res) => {
+exports.remove = async (req, res) => {
   const { creator_id } = req.body;
   const { groupId } = req.params;
-  Group.findById(groupId)
-    .then((group) => {
-      if (!group) {
-        return res.status(404).json({ error: "Group not found" });
-      }
-      if (group.creator_id.toString() !== creator_id) {
-        return res.status(403).json({ error: "Unauthorized" });
-      }
 
-      Group.findByIdAndRemove(groupId)
-        .then(() => {
-          User.findByIdAndUpdate(
-            creator_id,
-            { $pull: { groups: groupId } },
-            { new: true }
-          )
-            .then(() => {
-              res
-                .status(200)
-                .json({ success: true, message: "Group deleted successfully" });
-            })
-            .catch((err) => {
-              res.status(500).json({ error: "Error updating user", err: err });
-            });
-        })
-        .catch((err) => {
-          res.status(500).json({ error: "Error deleting group", err: err });
-        });
-    })
-    .catch((err) => {
-      res.status(500).json({ error: "Error finding group", err: err });
+  try {
+    const group = await Group.findById(groupId);
+
+    if (!group) {
+      return res.status(404).json({ error: "Group not found" });
+    }
+    if (group.creator_id.toString() !== creator_id) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    await Group.findByIdAndRemove(groupId);
+    const result = await User.updateMany({}, [
+      {
+        $set: {
+          groups: {
+            $filter: {
+              input: "$groups",
+              cond: { $ne: [{ $toString: "$$this" }, groupId] },
+            },
+          },
+        },
+      },
+    ]);
+
+    res.status(200).json({
+      success: true,
+      message: "Group deleted successfully",
+      usersUpdated: result.modifiedCount,
     });
+  } catch (err) {
+    console.error("Error in remove operation:", err);
+    res
+      .status(500)
+      .json({ error: "Error processing request", details: err.message });
+  }
 };
 
-exports.acceptInvite = (req, res) => {
+exports.acceptInvite = async (req, res) => {
   const { userId, groupId } = req.body;
 
-  Group.findById(groupId)
-    .then((group) => {
-      if (!group) {
-        return res.status(404).json({ error: "Group not found" });
-      }
-      if (group.members.includes(userId)) {
-        return res.status(400).json({ error: "User already in group" });
-      }
-      group.members.push(userId);
-      group
-        .save()
-        .then(() => {
-          User.findByIdAndUpdate(
-            userId,
-            { $push: { groups: groupId } },
-            { new: true }
-          )
-            .then(() => {
-              Group.findById(groupId)
-                .then((updatedGroup) => {
-                  User.find({ _id: { $in: updatedGroup.members } })
-                    .then((users) => {
-                      const groupWithMemberDetails = {
-                        ...updatedGroup.toObject(),
-                        members: users.map((user) => {
-                          return {
-                            _id: user._id,
-                            name: user.name,
-                            profilePicture: user.profilePicture,
-                            isCreator:
-                              user._id.toString() ===
-                              updatedGroup.creator_id.toString(),
-                          };
-                        }),
-                      };
-                      res.status(200).json({
-                        success: true,
-                        message: "User added successfully",
-                        group: groupWithMemberDetails,
-                      });
-                    })
-                    .catch((err) => {
-                      res.status(500).json({
-                        error: "Error fetching user details",
-                        err: err,
-                      });
-                    });
-                })
-                .catch((err) => {
-                  res
-                    .status(500)
-                    .json({ error: "Error finding updated group", err: err });
-                });
-            })
-            .catch((err) => {
-              res.status(500).json({ error: "Error updating user", err: err });
-            });
-        })
-        .catch((err) => {
-          res.status(500).json({ error: "Error updating group", err: err });
-        });
-    })
-    .catch((err) => {
-      res.status(500).json({ error: "Error finding group", err: err });
+  try {
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ error: "Group not found" });
+    }
+    if (group.members.includes(userId)) {
+      return res.status(400).json({ error: "User already in group" });
+    }
+    group.members.push(userId);
+    await group.save();
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    if (!user.groups) {
+      user.groups = [];
+    }
+
+    if (!user.groups.includes(groupId)) {
+      user.groups.push(groupId);
+      await user.save();
+    }
+
+    const updatedGroup = await Group.findById(groupId).populate(
+      "members",
+      "_id name profilePicture"
+    );
+
+    const groupWithMemberDetails = {
+      ...updatedGroup.toObject(),
+      members: updatedGroup.members.map((member) => ({
+        _id: member._id,
+        name: member.name,
+        profilePicture: member.profilePicture,
+        isCreator: member._id.toString() === updatedGroup.creator_id.toString(),
+      })),
+    };
+
+    res.status(200).json({
+      success: true,
+      message: "User added successfully",
+      group: groupWithMemberDetails,
     });
+  } catch (err) {
+    console.error("Error in acceptInvite:", err);
+    res.status(500).json({
+      error: "Error processing request",
+      details: err.message,
+      stack: err.stack,
+    });
+  }
 };
