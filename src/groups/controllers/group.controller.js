@@ -12,8 +12,7 @@ exports.create = (req, res) => {
     if (err) {
       return res.status(500).json({ error: "Error uploading file" });
     }
-    const { name, tag, creator_id } = req.body;
-    const groupImageFile = req.file;
+    const { name, tag, creator_id ,groupImageFile} = req.body;
 
     const createGroup = async (imageUrl = null) => {
       const userInfo = await User.findById(creator_id);
@@ -49,8 +48,14 @@ exports.create = (req, res) => {
         });
     };
 
-    if (groupImageFile) {
-      uploadImage(groupImageFile, (err, url) => {
+    if (groupImageFile && groupImageFile.data) {
+      const buffer = Buffer.from(groupImageFile.data, 'base64');
+      const tempFile = {
+        buffer: buffer,
+        originalname: groupImageFile.name,
+        mimetype: groupImageFile.type
+      };
+      uploadImage(tempFile, (err, url) => {
         if (err)
           return res.status(500).json({ error: "Image upload failed", err });
         createGroup(url);
