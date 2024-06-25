@@ -201,35 +201,34 @@ exports.acceptInvite = async (req, res) => {
   const { userId, groupId } = req.body;
 
   try {
-    const group = await Group.findById(groupId);
+    const [group, user] = await Promise.all([
+      Group.findById(groupId),
+      User.findById(userId),
+    ]);
+
     if (!group) {
       return res.status(404).json({ error: "Group not found" });
+    }
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
     }
     if (group.members.includes(userId)) {
       return res.status(400).json({ error: "User already in group" });
     }
     group.members.push(userId);
-    await group.save();
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
     if (!user.groups) {
-      user.groups = [];
-    }
-
-    if (!user.groups.includes(groupId)) {
+      user.groups = [groupId];
+    } else if (!user.groups.includes(groupId)) {
       user.groups.push(groupId);
-      await user.save();
     }
 
-    const updatedGroup = await Group.findById(groupId).populate(
-      "members",
-      "_id name profilePicture"
-    );
+    await Promise.all([group.save(), user.save()]);
+    const updatedGroup = await Group.findById(groupId)
+      .populate("members", "_id name profilePicture")
+      .lean();
 
     const groupWithMemberDetails = {
-      ...updatedGroup.toObject(),
+      ...updatedGroup,
       members: updatedGroup.members.map((member) => ({
         _id: member._id,
         name: member.name,
