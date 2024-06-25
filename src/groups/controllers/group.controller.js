@@ -8,44 +8,50 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage }).single("groupImageFile");
 
 exports.create = (req, res) => {
-  upload(req, res, (err) => {
+  upload(req, res, async (err) => {
     if (err) {
       return res.status(500).json({ error: "Error uploading file" });
     }
     const { name, tag, creator_id, groupImageFile } = req.body;
 
     const createGroup = async (imageUrl = null) => {
-      const userInfo = await User.findById(creator_id);
-      const newGroup = {
-        name: name,
-        groupImageFile: imageUrl,
-        tag: tag,
-        creator_id: creator_id,
-        members: [creator_id],
-        creator_name: userInfo.name,
-      };
+      try {
+        const userInfo = await User.findById(creator_id);
+        if (!userInfo) {
+          return res.status(404).json({ error: "User not found" });
+        }
 
-      Group.create(newGroup)
-        .then((group) => {
-          User.findByIdAndUpdate(
-            creator_id,
-            { $push: { groups: group._id } },
-            { new: true }
-          )
-            .then(() => {
-              res.status(201).json({
-                success: true,
-                message: "Group created successfully",
-                group: group,
-              });
-            })
-            .catch((err) => {
-              res.status(500).json({ error: "Error updating user", err: err });
-            });
-        })
-        .catch((err) => {
-          res.status(500).json({ error: "Error creating group", err: err });
+        const newGroup = {
+          name: name,
+          groupImageFile: imageUrl,
+          tag: tag,
+          creator_id: creator_id,
+          members: [creator_id],
+          creator_name: userInfo.name,
+        };
+
+        const group = await Group.create(newGroup);
+        if (!userInfo.groups) {
+          userInfo.groups = [];
+        }
+        if (!userInfo.groups.includes(group._id)) {
+          userInfo.groups.push(group._id);
+          await userInfo.save();
+        }
+
+        res.status(201).json({
+          success: true,
+          message: "Group created successfully",
+          group: group,
         });
+      } catch (error) {
+        console.error("Error in createGroup:", error);
+        res.status(500).json({ 
+          error: "Error processing request", 
+          details: error.message,
+          stack: error.stack
+        });
+      }
     };
 
     if (groupImageFile && groupImageFile.data) {
