@@ -33,9 +33,9 @@
     "passport-jwt": "^4.0.0",
     "query-string": "^6.10.1",
     "react-cookies": "^0.1.1",
+    "twilio": "^5.2.0",
     "uni-sdk": "^0.3.0",
     "uuid": "^10.0.0",
     "validator": "^10.9.0"
-  },
-  "devDependencies": {}
+  }
 }

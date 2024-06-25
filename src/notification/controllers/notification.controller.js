@@ -34,8 +34,8 @@ exports.inviteUsers = async (req, res) => {
         await notification.save();
         return { success: true, message: "Notification created" };
       } else {
-        await sendInviteMessage(numbers);
-        return { success: true, message: "Invite sent via SMS/WhatsApp" };
+        const data = await sendInviteMessage(numbers);
+        return { success: true, message: "Invite sent via SMS/WhatsApp",data };
       }
     });
 

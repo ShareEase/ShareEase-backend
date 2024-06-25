@@ -1,6 +1,9 @@
 const AWS = require("aws-sdk");
 const uuid = require("uuid").v4;
 const { UniClient } = require("uni-sdk");
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const twilioClient = require("twilio")(accountSid, authToken);
 
 AWS.config.update({
   accessKeyId: process.env.S3_ACCESS_KEY,
@@ -37,18 +40,13 @@ exports.uploadImage = (file, callback) => {
 
 exports.sendInviteMessage = async (phoneNumber) => {
   try {
-    client.messages
-      .send({
-        to: phoneNumber,
-        templateId: "pub_otp_en_basic",
-      })
-      .then((response) => {
-        return response;
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+    const data = await twilioClient.messages.create({
+      body: "what is this",
+      from: "+12518626177",
+      to: "+923432732771",
+    });
+    return data;
   } catch (error) {
-    throw new Error(error.message);
+    return error;
   }
 };
