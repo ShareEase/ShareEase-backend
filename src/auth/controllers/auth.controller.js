@@ -188,6 +188,26 @@ exports.loginFacebook = (req, res, next) => {
   })(req, res, next);
 };
 
+const updateUserAndRespond = async (user, token, id, res) => {
+  const payload = {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    profilePicture: user.profilePicture,
+    permissionLevel: user.permissionLevel,
+  };
+  try {
+    const [newToken, refreshToken] = await this.generateTokens(payload);
+    user.token = newToken;
+    user.refresh_token = refreshToken;
+    user.OAuthId = id;
+    await user.save();
+    return res.status(200).send({ message: "User logged in successfully", user });
+  } catch (err) {
+    return res.status(400).send({ error: "Error", err });
+  }
+};
+
 exports.loginGoogleStore = async (req, res, next) => {
   const { token, user } = req.body;
   if (!token || !user) {
@@ -195,30 +215,20 @@ exports.loginGoogleStore = async (req, res, next) => {
   }
   const { id, name, email, profilePicture, permissionLevel } = user;
   try {
-    const existingUser = await User.findOne({ email });
+    let existingUser = await User.findOne({ email });
 
     if (existingUser) {
-      existingUser.token = token;
-      existingUser.OAuthId = id;
-      await existingUser.save().then((user) => {
-        return res
-          .status(200)
-          .send({ message: "User logged in successfully", user });
-      });
+      await updateUserAndRespond(existingUser, token, id, res);
     } else {
       const newUser = new User({
         name,
         email,
         profilePicture,
         permissionLevel,
-        token,
+        token: token,
         OAuthId: id,
       });
-      await newUser.save().then((user) => {
-        return res
-          .status(200)
-          .send({ message: "User logged in successfully", user });
-      });
+      await updateUserAndRespond(newUser, token, id, res);
     }
   } catch (err) {
     return res.status(500).send({ error: "Internal server error", err });

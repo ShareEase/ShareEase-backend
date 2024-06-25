@@ -62,6 +62,11 @@ const userSchema = new Schema({
     required: false,
     default: false,
   },
+  refresh_token: {
+    type: String,
+    required: false,
+    default: "",
+  },
   groups: [
     {
       type: Schema.Types.ObjectId,
