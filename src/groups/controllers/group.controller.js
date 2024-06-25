@@ -16,14 +16,14 @@ exports.create = (req, res) => {
     const groupImageFile = req.file;
 
     const createGroup = async (imageUrl = null) => {
-      const { name } = await User.findById(creator_id);
+      const userInfo = await User.findById(creator_id);
       const newGroup = {
         name: name,
         groupImageFile: imageUrl,
         tag: tag,
         creator_id: creator_id,
         members: [creator_id],
-        creator_name: name,
+        creator_name: userInfo.name,
       };
 
       Group.create(newGroup)
