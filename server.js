@@ -27,7 +27,7 @@ app.use(
     extended: false,
   })
 );
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: "20mb" }));
 
 const db = process.env.MONGO_URI;
 if (process.env.NODE_ENV != "test") {
