@@ -20,10 +20,19 @@ exports.inviteUsers = async (req, res) => {
     }
 
     const invitePromises = usersToInvite.map(async (numbers) => {
+      //remove spaces from phoneNumber and add country code
+      numbers = numbers.replace(/\s/g, "");
+      if (!numbers.startsWith("+")) {
+        if (numbers.startsWith("0")) {
+          numbers = "+92" + numbers.slice(1);
+        } else numbers = "+92" + numbers;
+      }
+
       if (numbers === creator.phoneNumber) {
         return { success: false, message: "You cannot invite yourself" };
       }
       const user = await User.findOne({ phoneNumber: numbers });
+      console.log(user);
       if (user) {
         const notification = new Notification({
           userId: user._id,
@@ -35,7 +44,7 @@ exports.inviteUsers = async (req, res) => {
         return { success: true, message: "Notification created" };
       } else {
         const data = await sendInviteMessage(numbers);
-        return { success: true, message: "Invite sent via SMS/WhatsApp",data };
+        return { success: true, message: "Invite sent via SMS/WhatsApp", data };
       }
     });
 
