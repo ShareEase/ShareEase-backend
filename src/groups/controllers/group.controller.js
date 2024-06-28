@@ -38,18 +38,24 @@ exports.create = (req, res) => {
           userInfo.groups.push(group._id);
           await userInfo.save();
         }
-
+        const groupMembers = await User.find({
+          _id: { $in: group.members },
+        }).select("_id name email profilePicture");
+        const groupWithMembers = {
+          ...group.toObject(),
+          members: groupMembers,
+        };
         res.status(201).json({
           success: true,
           message: "Group created successfully",
-          group: group,
+          group: groupWithMembers,
         });
       } catch (error) {
         console.error("Error in createGroup:", error);
-        res.status(500).json({ 
-          error: "Error processing request", 
+        res.status(500).json({
+          error: "Error processing request",
           details: error.message,
-          stack: error.stack
+          stack: error.stack,
         });
       }
     };
@@ -132,28 +138,54 @@ exports.update = (req, res) => {
     }
     const { groupId } = req.params;
     const updatedGroupBody = req.body;
-    const groupImageFile = req.file;
 
-    const updateGroup = (imageUrl = null) => {
-      if (imageUrl) {
-        updatedGroupBody.groupImageFile = imageUrl;
-      }
+    const updateGroup = async (imageUrl = null) => {
+      try {
+        if (imageUrl) {
+          updatedGroupBody.groupImageFile = imageUrl;
+        }
+        const updatedGroup = await Group.findByIdAndUpdate(
+          groupId,
+          updatedGroupBody,
+          { new: true }
+        );
+        if (!updatedGroup) {
+          return res.status(404).json({ error: "Group not found" });
+        }
+        const groupMembers = await User.find({
+          _id: { $in: updatedGroup.members },
+        }).select("_id name email profilePicture");
+        const groupWithMembers = {
+          ...updatedGroup.toObject(),
+          members: groupMembers,
+        };
 
-      Group.findByIdAndUpdate(groupId, updatedGroupBody, { new: true })
-        .then((updatedGroup) => {
-          res.status(200).json({
-            success: true,
-            message: "Group updated successfully",
-            group: updatedGroup,
-          });
-        })
-        .catch((err) => {
-          res.status(500).json({ error: "Error updating group", err: err });
+        res.status(200).json({
+          success: true,
+          message: "Group updated successfully",
+          group: groupWithMembers,
         });
+      } catch (error) {
+        console.error("Error in updateGroup:", error);
+        res.status(500).json({
+          error: "Error updating group",
+          details: error.message,
+          stack: error.stack,
+        });
+      }
     };
 
-    if (groupImageFile) {
-      uploadImage(groupImageFile, (err, url) => {
+    if (
+      updatedGroupBody.groupImageFile &&
+      updatedGroupBody.groupImageFile.data
+    ) {
+      const buffer = Buffer.from(groupImageFile.data, "base64");
+      const tempFile = {
+        buffer: buffer,
+        originalname: groupImageFile.name,
+        mimetype: groupImageFile.type,
+      };
+      uploadImage(tempFile, (err, url) => {
         if (err) return res.status(500).json({ error: "Image upload failed" });
         updateGroup(url);
       });
