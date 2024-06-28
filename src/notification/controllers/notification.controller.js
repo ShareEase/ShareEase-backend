@@ -32,7 +32,6 @@ exports.inviteUsers = async (req, res) => {
         return { success: false, message: "You cannot invite yourself" };
       }
       const user = await User.findOne({ phoneNumber: numbers });
-      console.log(user);
       if (user) {
         const notification = new Notification({
           userId: user._id,
