@@ -111,13 +111,21 @@ exports.patchById = (req, res) => {
         newUser.password = hash;
 
         User.patch(req.params.userId, newUser).then(result => {
-          res.status(200).send({});
+          res.status(200).send({
+            success: true,
+            message: "Password changed",
+            result: result
+          });
         });
       });
     });
   } else {
     User.patch(req.params.userId, req.body).then(result => {
-      res.status(200).send({});
+      res.status(200).send({
+        success: true,
+        message: "User updated",
+        result: result
+      });
     });
   }
 };
