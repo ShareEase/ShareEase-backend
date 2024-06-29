@@ -13,6 +13,11 @@ router.post("/invite", [
   AuthMiddleware.validJWTNeeded,
   GroupsController.acceptInvite,
 ]);
+router.post("/kickUser/:groupId", [
+  AuthMiddleware.validJWTNeeded,
+  PermissionsMiddleware.onlyGroupCreatorCanEdit,
+  GroupsController.kickUser,
+]);
 router.get("/list/:userId", [
   AuthMiddleware.validJWTNeeded,
   GroupsController.listUserGroups,
