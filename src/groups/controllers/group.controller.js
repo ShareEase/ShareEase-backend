@@ -80,11 +80,11 @@ exports.create = (req, res) => {
 exports.listUserGroups = async (req, res) => {
   const { userId } = req.params;
   try {
-    await Group.createIndexes({ creator_id: 1 });
+    await Group.createIndexes({ members: 1 });
     await User.createIndexes({ _id: 1 });
 
     const groups = await Group.aggregate([
-      { $match: { creator_id: mongoose.Types.ObjectId(userId) } },
+      { $match: { members: mongoose.Types.ObjectId(userId) } },
       {
         $lookup: {
           from: "users",
@@ -286,7 +286,6 @@ exports.acceptInvite = async (req, res) => {
   }
 };
 
-
 exports.kickUser = async (req, res) => {
   const { userId } = req.body;
   const { groupId } = req.params;
@@ -309,7 +308,9 @@ exports.kickUser = async (req, res) => {
       return res.status(400).json({ error: "Cannot kick group creator" });
     }
 
-    group.members = group.members.filter((member) => member.toString() !== userId);
+    group.members = group.members.filter(
+      (member) => member.toString() !== userId
+    );
     user.groups = user.groups.filter((group) => group.toString() !== groupId);
 
     await Promise.all([group.save(), user.save()]);
@@ -332,12 +333,11 @@ exports.kickUser = async (req, res) => {
       message: "User removed successfully",
       group: groupWithMemberDetails,
     });
-  }
-  catch (err) {
+  } catch (err) {
     res.status(500).json({
       error: "Error processing request",
       details: err.message,
       stack: err.stack,
     });
   }
-}
+};
