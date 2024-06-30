@@ -118,6 +118,14 @@ exports.listUserGroups = async (req, res) => {
           },
         },
       },
+      {
+        $lookup:{
+          from: "expenses",
+          localField: "expenses",
+          foreignField: "_id",
+          as: "expenses"
+        },
+      },
     ]).exec();
 
     res.status(200).json({
