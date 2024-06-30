@@ -1,6 +1,7 @@
-const Expense = require("../models/expense.model");
-const Group = require("../models/group.model");
-const User = require("../models/user.model");
+const Expense = require("../models/expense")
+const Group = require("../../groups/models/group");
+const mongoose = require("mongoose");
+var User = mongoose.model("User");
 const multer = require("multer");
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage }).single("expenseImageFile");
@@ -22,7 +23,6 @@ exports.createExpense = (req, res) => {
       splitDetails,
       expenseImageFile,
     } = req.body;
-
     const createExpenseRecord = async (imageUrl = null) => {
       try {
         const group = await Group.findById(groupId);
@@ -34,12 +34,11 @@ exports.createExpense = (req, res) => {
         if (!payer) {
           return res.status(404).json({ error: "Payer not found" });
         }
-
         let calculatedSplitDetails;
 
         switch (splittingType) {
           case "equal":
-            const selectedMembers = JSON.parse(splitDetails).filter(
+            const selectedMembers = splitDetails.filter(
               (detail) => detail.selected
             );
             if (selectedMembers.length === 0) {
@@ -55,7 +54,7 @@ exports.createExpense = (req, res) => {
             break;
 
           case "amount":
-            const amountDetails = JSON.parse(splitDetails);
+            const amountDetails = splitDetails;
             if (!amountDetails || !Array.isArray(amountDetails)) {
               return res
                 .status(400)
@@ -82,7 +81,7 @@ exports.createExpense = (req, res) => {
             break;
 
           case "percentage":
-            const percentageDetails = JSON.parse(splitDetails);
+            const percentageDetails = splitDetails;
             if (!percentageDetails || !Array.isArray(percentageDetails)) {
               return res
                 .status(400)

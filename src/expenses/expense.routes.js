@@ -13,3 +13,5 @@ router.get("/:expenseId", [
   AuthMiddleware.validJWTNeeded,
   ExpenseController.getExpense,
 ]);
+
+module.exports = router;

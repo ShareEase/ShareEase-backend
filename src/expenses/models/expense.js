@@ -16,7 +16,7 @@ const expenseSchema = new Schema(
       ref: "User",
       required: true,
     },
-    splitting: {
+    splittingType: {
       type: String,
       enum: ["equal", "amount", "percentage"],
       required: true,
@@ -26,6 +26,7 @@ const expenseSchema = new Schema(
         user: {
           type: Schema.Types.ObjectId,
           ref: "User",
+          required: true,
         },
         selected: Boolean,
         amount: Number,
