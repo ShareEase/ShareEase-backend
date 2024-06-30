@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Group = require("../models/group");
+const Notification = require("../../notification/model/notification");
 const { uploadImage } = require("../../utils/utils"); // hypothetical image upload function
 const User = mongoose.model("User");
 const multer = require("multer");
@@ -241,12 +242,13 @@ exports.remove = async (req, res) => {
 };
 
 exports.acceptInvite = async (req, res) => {
-  const { userId, groupId } = req.body;
+  const { userId, groupId, notificationId } = req.body;
 
   try {
-    const [group, user] = await Promise.all([
+    const [group, user, notification ] = await Promise.all([
       Group.findById(groupId),
       User.findById(userId),
+      Notification.findById(notificationId)
     ]);
 
     if (!group) {
@@ -254,6 +256,9 @@ exports.acceptInvite = async (req, res) => {
     }
     if (!user) {
       return res.status(404).json({ error: "User not found" });
+    }
+    if (!notification) {
+      return res.status(404).json({ error: "Notification not found" });
     }
     if (group.members.includes(userId)) {
       return res.status(400).json({ error: "User already in group" });
@@ -265,7 +270,8 @@ exports.acceptInvite = async (req, res) => {
       user.groups.push(groupId);
     }
 
-    await Promise.all([group.save(), user.save()]);
+
+    await Promise.all([group.save(), user.save(), notification.remove()]);
     const updatedGroup = await Group.findById(groupId)
       .populate("members", "_id name profilePicture")
       .lean();
