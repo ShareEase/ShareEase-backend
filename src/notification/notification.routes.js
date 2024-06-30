@@ -5,7 +5,7 @@ const NotificationController = require("./controllers/notification.controller");
 
 
 
-router.get("/getNotifications", [
+router.get("/:userId", [
   AuthMiddleware.validJWTNeeded,
   NotificationController.getUserNotifications,
 ]);

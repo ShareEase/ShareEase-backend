@@ -5,7 +5,7 @@ const Notification = require("../model/notification");
 const { sendInviteMessage } = require("../../utils/utils");
 
 exports.getUserNotifications = async (req, res) => {
-  const { userId } = req.body;
+  const { userId } = req.params;
   try {
     const user = await User.findById(userId);
     if (!user) {
