@@ -40,7 +40,6 @@ exports.inviteUsers = async (req, res) => {
     }
 
     const invitePromises = usersToInvite.map(async (numbers) => {
-      //remove spaces from phoneNumber and add country code
       numbers = numbers.replace(/\s/g, "");
       if (!numbers.startsWith("+")) {
         if (numbers.startsWith("0")) {

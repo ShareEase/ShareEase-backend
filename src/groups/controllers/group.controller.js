@@ -264,6 +264,7 @@ exports.acceptInvite = async (req, res) => {
       return res.status(400).json({ error: "User already in group" });
     }
     group.members.push(userId);
+    notification.read = true;
     if (!user.groups) {
       user.groups = [groupId];
     } else if (!user.groups.includes(groupId)) {
@@ -271,7 +272,7 @@ exports.acceptInvite = async (req, res) => {
     }
 
 
-    await Promise.all([group.save(), user.save(), notification.remove()]);
+    await Promise.all([group.save(), user.save(),notification.save()]);
     const updatedGroup = await Group.findById(groupId)
       .populate("members", "_id name profilePicture")
       .lean();
