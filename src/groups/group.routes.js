@@ -18,6 +18,10 @@ router.post("/kickUser/:groupId", [
   PermissionsMiddleware.onlyGroupCreatorCanEdit,
   GroupsController.kickUser,
 ]);
+router.post("/leaveGroup/:groupId", [
+  AuthMiddleware.validJWTNeeded,
+  GroupsController.LeaveGroup,
+]);
 router.get("/list/:userId", [
   AuthMiddleware.validJWTNeeded,
   GroupsController.listUserGroups,

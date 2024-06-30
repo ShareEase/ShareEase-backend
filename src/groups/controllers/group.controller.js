@@ -349,3 +349,55 @@ exports.kickUser = async (req, res) => {
     });
   }
 };
+exports.LeaveGroup = async (req, res) => {
+  const { userId } = req.body;
+  const { groupId } = req.params;
+  try {
+    const [group, user] = await Promise.all([
+      Group.findById(groupId),
+      User.findById(userId),
+    ]);
+
+    if (!group) {
+      return res.status(404).json({ error: "Group not found" });
+    }
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    if (!group.members.includes(userId)) {
+      return res.status(400).json({ error: "User not in group" });
+    }
+
+    group.members = group.members.filter(
+      (member) => member.toString() !== userId
+    );
+    user.groups = user.groups.filter((group) => group.toString() !== groupId);
+
+    await Promise.all([group.save(), user.save()]);
+    const updatedGroup = await Group.findById(groupId)
+      .populate("members", "_id name profilePicture")
+      .lean();
+
+    const groupWithMemberDetails = {
+      ...updatedGroup,
+      members: updatedGroup.members.map((member) => ({
+        _id: member._id,
+        name: member.name,
+        profilePicture: member.profilePicture,
+        isCreator: member._id.toString() === updatedGroup.creator_id.toString(),
+      })),
+    };
+
+    res.status(200).json({
+      success: true,
+      message: "User removed successfully",
+      group: groupWithMemberDetails,
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: "Error processing request",
+      details: err.message,
+      stack: err.stack,
+    });
+  }
+};
