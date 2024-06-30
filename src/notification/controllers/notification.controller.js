@@ -11,13 +11,24 @@ exports.getUserNotifications = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
+    
     const notifications = await Notification.find({ userId: userId })
-      .populate("groupId")
+      .populate({
+        path: 'groupId',
+        select: 'name creator_name'
+      })
       .sort({ createdAt: -1 });
+
+    const responseNotifications = notifications.map(notification => ({
+      ...notification._doc,
+      groupName: notification.groupId ? notification.groupId.name : null,
+      userName: notification.groupId ? notification.groupId.creator_name : null,
+    }));
+
     res.status(200).json({
       success: true,
       message: "Notifications fetched successfully",
-      notifications,
+      notifications: responseNotifications,
     });
   } catch (error) {
     res.status(500).json({ error: "Error getting notifications", err: error });
