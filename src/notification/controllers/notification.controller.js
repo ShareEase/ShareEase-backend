@@ -67,6 +67,7 @@ exports.inviteUsers = async (req, res) => {
         const notification = new Notification({
           userId: user._id,
           groupId,
+          type: "invite",
           message: `You have been invited to join the group ${group.name}`,
         });
 

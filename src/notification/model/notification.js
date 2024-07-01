@@ -22,6 +22,11 @@ const notificationSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  type: {
+    type: String,
+    enum: ["invite", "request", "alert"],
+    required: true,
+  },
 },{ timestamps: true, versionKey: false });
 
 module.exports = mongoose.model("Notification", notificationSchema);

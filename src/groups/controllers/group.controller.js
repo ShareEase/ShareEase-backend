@@ -216,6 +216,7 @@ exports.remove = async (req, res) => {
       return res.status(403).json({ error: "Unauthorized" });
     }
     await Group.findByIdAndRemove(groupId);
+    await Notification.deleteMany({ groupId: groupId });
     const result = await User.updateMany({}, [
       {
         $set: {
