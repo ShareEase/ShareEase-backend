@@ -15,7 +15,7 @@ exports.getUserNotifications = async (req, res) => {
     const notifications = await Notification.find({ userId: userId })
       .populate({
         path: 'groupId',
-        select: 'name creator_name'
+        select: 'name creator_name tag groupImageFile'
       })
       .sort({ createdAt: -1 });
 
@@ -23,6 +23,7 @@ exports.getUserNotifications = async (req, res) => {
       ...notification._doc,
       groupName: notification.groupId ? notification.groupId.name : null,
       userName: notification.groupId ? notification.groupId.creator_name : null,
+      profilePicture: user.profilePicture,
     }));
 
     res.status(200).json({
