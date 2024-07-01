@@ -5,13 +5,19 @@ const NotificationController = require("./controllers/notification.controller");
 
 
 
-router.get("/:userId", [
-  AuthMiddleware.validJWTNeeded,
-  NotificationController.getUserNotifications,
-]);
 router.post("/inviteUsers", [
   AuthMiddleware.validJWTNeeded,
   NotificationController.inviteUsers,
 ]);
+router.get("/:userId", [
+  AuthMiddleware.validJWTNeeded,
+  NotificationController.getUserNotifications,
+]);
+router.delete("/:notificationId", [
+  AuthMiddleware.validJWTNeeded,
+  NotificationController.declineNotification,
+]);
+
+
 
 module.exports = router;
