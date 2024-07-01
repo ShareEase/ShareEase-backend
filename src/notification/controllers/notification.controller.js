@@ -50,20 +50,37 @@ exports.inviteUsers = async (req, res) => {
     if (!creator) {
       return res.status(404).json({ error: "Creator not found" });
     }
-
-    const invitePromises = usersToInvite.map(async (numbers) => {
+    const normalizedNumbers = usersToInvite.map(numbers => {
       numbers = numbers.replace(/\s/g, "");
       if (!numbers.startsWith("+")) {
         if (numbers.startsWith("0")) {
           numbers = "+92" + numbers.slice(1);
         } else numbers = "+92" + numbers;
       }
+      return numbers;
+    });
 
+    const users = await User.find({ phoneNumber: { $in: normalizedNumbers } });
+    const userIds = users.map(user => user._id);
+    const notifications = await Notification.find({
+      userId: { $in: userIds },
+      groupId,
+      type: "invite",
+    });
+    const invitePromises = normalizedNumbers.map(async (numbers) => {
       if (numbers === creator.phoneNumber) {
         return { success: false, message: "You cannot invite yourself" };
       }
-      const user = await User.findOne({ phoneNumber: numbers });
+      const user = users.find(user => user.phoneNumber === numbers);
       if (user) {
+        const existingNotification = notifications.find(
+          notification => notification.userId.toString() === user._id.toString()
+        );
+
+        if (existingNotification) {
+          return { success: false, message: "Notification already exists for this user" };
+        }
+
         const notification = new Notification({
           userId: user._id,
           groupId,
