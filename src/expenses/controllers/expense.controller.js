@@ -3,6 +3,7 @@ const Group = require("../../groups/models/group");
 const mongoose = require("mongoose");
 var User = mongoose.model("User");
 const multer = require("multer");
+const Notification = require("../../notification/model/notification");
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage }).single("expenseImageFile");
 
@@ -23,6 +24,24 @@ exports.createExpense = (req, res) => {
       splitDetails,
       expenseImageFile,
     } = req.body;
+
+    const createNotifications = async (expenseId, group, payer, splitDetails) => {
+      const notifications = splitDetails.map((detail) => ({
+        userId: detail.user,
+        groupId: group._id,
+        message: `A new expense "${description}" was created in the group "${group.name}"`,
+        type: "alert",
+      }));
+
+      notifications.push({
+        userId: payer._id,
+        groupId: group._id,
+        message: `You paid for a new expense "${description}" in the group "${group.name}"`,
+        type: "alert",
+      });
+      await Notification.insertMany(notifications);
+    };
+
     const createExpenseRecord = async (imageUrl = null) => {
       try {
         const group = await Group.findById(groupId);
@@ -34,6 +53,7 @@ exports.createExpense = (req, res) => {
         if (!payer) {
           return res.status(404).json({ error: "Payer not found" });
         }
+
         let calculatedSplitDetails;
 
         switch (splittingType) {
@@ -127,6 +147,8 @@ exports.createExpense = (req, res) => {
         await newExpense.save();
         group.expenses.push(newExpense._id);
         await group.save();
+
+        await createNotifications(newExpense._id, group, payer, calculatedSplitDetails);
 
         const populatedExpense = await Expense.findById(newExpense._id)
           .populate("paid_by", "name")
