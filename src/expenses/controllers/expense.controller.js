@@ -35,7 +35,10 @@ exports.createExpense = (req, res) => {
         userId: detail.user,
         groupId: group._id,
         expenseId,
-        creator: payer._id,
+        creator: {
+          _id: payer._id,
+          name: payer.name,
+        },
         alertType: "addedExpense",
         message: `A new expense "${description}" was created in the group "${group.name}"`,
         type: "alert",
