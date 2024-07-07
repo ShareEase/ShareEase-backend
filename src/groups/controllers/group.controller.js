@@ -96,14 +96,6 @@ exports.listUserGroups = async (req, res) => {
           select: "name",
         })
         .lean();
-      for (let expense of group.expenses) {
-        expense.splitDetails = expense.splitDetails.map((detail) => ({
-          userId: detail.user._id,
-          name: detail.user.name,
-          amount: detail.amount,
-          percentage: detail.percentage,
-        }));
-      }
       group.members = group.members.map((member) => ({
         _id: member._id,
         name: member.name,
