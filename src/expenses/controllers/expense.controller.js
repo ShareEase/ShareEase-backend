@@ -1,4 +1,4 @@
-const Expense = require("../models/expense")
+const Expense = require("../models/expense");
 const Group = require("../../groups/models/group");
 const mongoose = require("mongoose");
 var User = mongoose.model("User");
@@ -25,15 +25,22 @@ exports.createExpense = (req, res) => {
       expenseImageFile,
     } = req.body;
 
-    const createNotifications = async (expenseId, group, payer, splitDetails) => {
+    const createNotifications = async (
+      expenseId,
+      group,
+      payer,
+      splitDetails
+    ) => {
       const notifications = splitDetails.map((detail) => ({
         userId: detail.user,
         groupId: group._id,
         expenseId,
+        creator: payer._id,
         alertType: "addedExpense",
         message: `A new expense "${description}" was created in the group "${group.name}"`,
         type: "alert",
       }));
+
       await Notification.insertMany(notifications);
     };
 
@@ -71,23 +78,18 @@ exports.createExpense = (req, res) => {
           case "amount":
             const amountDetails = splitDetails;
             if (!amountDetails || !Array.isArray(amountDetails)) {
-              return res
-                .status(400)
-                .json({
-                  error:
-                    "Split details are required for amount-based splitting",
-                });
+              return res.status(400).json({
+                error: "Split details are required for amount-based splitting",
+              });
             }
             const totalSplitAmount = amountDetails.reduce(
               (sum, split) => sum + (Number(split.amount) || 0),
               0
             );
             if (Math.abs(totalSplitAmount - amount) > 0.01) {
-              return res
-                .status(400)
-                .json({
-                  error: "Total split amount does not match the expense amount",
-                });
+              return res.status(400).json({
+                error: "Total split amount does not match the expense amount",
+              });
             }
             calculatedSplitDetails = amountDetails.map((split) => ({
               user: split.user,
@@ -98,12 +100,10 @@ exports.createExpense = (req, res) => {
           case "percentage":
             const percentageDetails = splitDetails;
             if (!percentageDetails || !Array.isArray(percentageDetails)) {
-              return res
-                .status(400)
-                .json({
-                  error:
-                    "Split details are required for percentage-based splitting",
-                });
+              return res.status(400).json({
+                error:
+                  "Split details are required for percentage-based splitting",
+              });
             }
             const totalPercentage = percentageDetails.reduce(
               (sum, split) => sum + (Number(split.percentage) || 0),
@@ -143,7 +143,12 @@ exports.createExpense = (req, res) => {
         group.expenses.push(newExpense._id);
         await group.save();
 
-        await createNotifications(newExpense._id, group, payer, calculatedSplitDetails);
+        await createNotifications(
+          newExpense._id,
+          group,
+          payer,
+          calculatedSplitDetails
+        );
 
         const populatedExpense = await Expense.findById(newExpense._id)
           .populate("paid_by", "name")
@@ -204,5 +209,3 @@ exports.getExpense = async (req, res) => {
     });
   }
 };
-
-
