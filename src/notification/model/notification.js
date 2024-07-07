@@ -20,8 +20,13 @@ const notificationSchema = new mongoose.Schema(
       default: Date.now,
     },
     creator: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      name: {
+        type: String,
+      },
     },
     read: {
       type: Boolean,
