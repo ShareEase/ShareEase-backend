@@ -4,6 +4,7 @@ const Notification = require("../../notification/model/notification");
 const { uploadImage } = require("../../utils/utils"); // hypothetical image upload function
 const User = mongoose.model("User");
 const multer = require("multer");
+const Expense = require("../../expenses/models/expense");
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage }).single("groupImageFile");
@@ -81,53 +82,35 @@ exports.create = (req, res) => {
 exports.listUserGroups = async (req, res) => {
   const { userId } = req.params;
   try {
-    await Group.createIndexes({ members: 1 });
-    await User.createIndexes({ _id: 1 });
-
-    const groups = await Group.aggregate([
-      { $match: { members: mongoose.Types.ObjectId(userId) } },
-      {
-        $lookup: {
-          from: "users",
-          localField: "members",
-          foreignField: "_id",
-          as: "members",
-          pipeline: [
-            {
-              $project: {
-                _id: 1,
-                name: 1,
-                profilePicture: 1,
-              },
-            },
-          ],
-        },
-      },
-      {
-        $lookup:{
-          from: "expenses",
-          localField: "expenses",
-          foreignField: "_id",
-          as: "expenses"
-        },
-      },
-      {
-        $addFields: {
-          members: {
-            $map: {
-              input: "$members",
-              as: "member",
-              in: {
-                _id: "$$member._id",
-                name: "$$member.name",
-                profilePicture: "$$member.profilePicture",
-                isCreator: { $eq: ["$$member._id", "$creator_id"] },
-              },
-            },
-          },
-        },
-      },
-    ]).exec();
+    let groups = await Group.find({ members: mongoose.Types.ObjectId(userId) })
+      .populate({
+        path: "members",
+        select: "name profilePicture",
+      })
+      .lean();
+    for (let group of groups) {
+      group.expenses = await Expense.find({ _id: { $in: group.expenses } })
+        .populate("paid_by", "name")
+        .populate({
+          path: "splitDetails.user",
+          select: "name",
+        })
+        .lean();
+      for (let expense of group.expenses) {
+        expense.splitDetails = expense.splitDetails.map((detail) => ({
+          userId: detail.user._id,
+          name: detail.user.name,
+          amount: detail.amount,
+          percentage: detail.percentage,
+        }));
+      }
+      group.members = group.members.map((member) => ({
+        _id: member._id,
+        name: member.name,
+        profilePicture: member.profilePicture,
+        isCreator: member._id.toString() === group.creator_id.toString(),
+      }));
+    }
 
     res.status(200).json({
       success: true,
@@ -246,10 +229,10 @@ exports.acceptInvite = async (req, res) => {
   const { userId, groupId, notificationId } = req.body;
 
   try {
-    const [group, user, notification ] = await Promise.all([
+    const [group, user, notification] = await Promise.all([
       Group.findById(groupId),
       User.findById(userId),
-      Notification.findById(notificationId)
+      Notification.findById(notificationId),
     ]);
 
     if (!group) {
@@ -272,8 +255,7 @@ exports.acceptInvite = async (req, res) => {
       user.groups.push(groupId);
     }
 
-
-    await Promise.all([group.save(), user.save(),notification.save()]);
+    await Promise.all([group.save(), user.save(), notification.save()]);
     const updatedGroup = await Group.findById(groupId)
       .populate("members", "_id name profilePicture")
       .lean();

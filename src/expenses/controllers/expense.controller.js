@@ -29,16 +29,11 @@ exports.createExpense = (req, res) => {
       const notifications = splitDetails.map((detail) => ({
         userId: detail.user,
         groupId: group._id,
+        expenseId,
+        alertType: "addedExpense",
         message: `A new expense "${description}" was created in the group "${group.name}"`,
         type: "alert",
       }));
-
-      notifications.push({
-        userId: payer._id,
-        groupId: group._id,
-        message: `You paid for a new expense "${description}" in the group "${group.name}"`,
-        type: "alert",
-      });
       await Notification.insertMany(notifications);
     };
 
@@ -209,3 +204,5 @@ exports.getExpense = async (req, res) => {
     });
   }
 };
+
+

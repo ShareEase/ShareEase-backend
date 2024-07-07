@@ -27,6 +27,14 @@ const notificationSchema = new mongoose.Schema({
     enum: ["invite", "request", "alert"],
     required: true,
   },
+  expenseId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Expense",
+  },
+  alertType: {
+    type: String,
+    enum: ["settled", "paid","addedExpense"],
+  },
 },{ timestamps: true, versionKey: false });
 
 module.exports = mongoose.model("Notification", notificationSchema);

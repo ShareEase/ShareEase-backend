@@ -1,6 +1,18 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
-
+const splitDetailSchema = new Schema(
+  {
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    selected: Boolean,
+    amount: Number,
+    percentage: Number,
+  },
+  { _id: false }
+);
 const expenseSchema = new Schema(
   {
     description: {
@@ -21,18 +33,7 @@ const expenseSchema = new Schema(
       enum: ["equal", "amount", "percentage"],
       required: true,
     },
-    splitDetails: [
-      {
-        user: {
-          type: Schema.Types.ObjectId,
-          ref: "User",
-          required: true,
-        },
-        selected: Boolean,
-        amount: Number,
-        percentage: Number,
-      },
-    ],
+    splitDetails: [splitDetailSchema],
     dateOfExpense: {
       type: Date,
       required: true,
