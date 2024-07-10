@@ -94,7 +94,7 @@ exports.listUserGroups = async (req, res) => {
         .populate({
           path: "splitDetails.user",
           select: "name",
-        })
+        }).sort({ createdAt: -1 })
         .lean();
       group.members = group.members.map((member) => ({
         _id: member._id,

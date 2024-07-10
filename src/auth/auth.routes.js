@@ -30,9 +30,8 @@ router.post("/refresh", [
 
 router.post(
   "/phoneNumber",
-  AuthMiddleware.JwtNeeded,
   AuthController.addPhoneNumberAndSendOtp
 );
-router.post("/verifyCode", AuthMiddleware.JwtNeeded, AuthController.verifyCode);
+router.post("/verifyCode", AuthController.verifyCode);
 
 module.exports = router;

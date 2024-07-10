@@ -8,10 +8,7 @@ var User = mongoose.model("User");
 const UsersController = require("../../users/controllers/users.controller");
 require("dotenv").config();
 const { UniClient } = require("uni-sdk");
-
-const client = new UniClient({
-  accessKeyId: process.env.UNIMTX_API_KEY,
-});
+const { verifyOTP, sendOTP } = require("../../utils/utils");
 
 exports.generateTokens = (user) => {
   return new Promise((resolve, reject) => {
@@ -202,7 +199,9 @@ const updateUserAndRespond = async (user, token, id, res) => {
     user.refresh_token = refreshToken;
     user.OAuthId = id;
     await user.save();
-    return res.status(200).send({ message: "User logged in successfully", user });
+    return res
+      .status(200)
+      .send({ message: "User logged in successfully", user });
   } catch (err) {
     return res.status(400).send({ error: "Error", err });
   }
@@ -247,16 +246,7 @@ exports.addPhoneNumberAndSendOtp = (req, res) => {
 
       user.phoneNumber = phoneNumber;
       user.save().then(async (updatedUser) => {
-        client.otp
-          .send({
-            to: phoneNumber,
-            channel: "whatsapp",
-          })
-          .then((ret) => {
-            return res
-              .status(200)
-              .json({ message: "OTP sent successfully", ret });
-          });
+        const verification = await sendOTP(phoneNumber);
       });
     })
     .catch((err) => {
@@ -269,41 +259,35 @@ exports.verifyCode = (req, res) => {
   const code = req.body.code;
 
   User.findOne({ _id: userId })
-    .then((user) => {
+    .then(async (user) => {
       if (!user) {
         return res.status(404).json({ auth: "User not found" });
       }
 
-      client.otp
-        .verify({
-          to: phoneNumber,
-          code: code,
-        })
-        .then((ret) => {
-          if (!ret.valid) {
-            return res.status(400).json({ message: "Invalid OTP" });
-          }
+      const verification = await verifyOTP(phoneNumber);
 
-          user.code = code;
-          user.phoneNumberVerified = true;
+      if (!verification.valid) {
+        return res.status(400).json({ message: "Invalid OTP" });
+      }
 
-          user
-            .save()
-            .then((updatedUser) => {
-              return res.status(200).json({
-                message: "OTP verified successfully",
-                user: updatedUser,
-              });
-            })
-            .catch((err) => {
-              res
-                .status(500)
-                .json({ error: "Error updating user", details: err });
+      if (verification.valid) {
+        user.code = code;
+        user.phoneNumberVerified = true;
+
+        user
+          .save()
+          .then((updatedUser) => {
+            return res.status(200).json({
+              message: "OTP verified successfully",
+              user: updatedUser,
             });
-        })
-        .catch((err) => {
-          res.status(500).json({ error: "Error verifying OTP", details: err });
-        });
+          })
+          .catch((err) => {
+            res
+              .status(500)
+              .json({ error: "Error updating user", details: err });
+          });
+      }
     })
     .catch((err) => {
       res.status(500).json({ error: "Server error", details: err });

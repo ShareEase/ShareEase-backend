@@ -10,6 +10,7 @@ const notificationRouter = require("./src/notification/notification.routes");
 const usersRouter = require("./src/users/users.routes");
 const groupsRouter = require("./src/groups/group.routes");
 const expenseRouter = require("./src/expenses/expense.routes");
+const finverseRouter = require("./src/finverse/finverse.route");
 require("dotenv").config();
 const app = express();
 app.use(function (req, res, next) {
@@ -47,6 +48,7 @@ app.use("/api/groups", groupsRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/notification", notificationRouter);
+app.use("/api/payment", finverseRouter);
 const port = process.env.PORT || 5000;
 
 app.listen(port, () => {
