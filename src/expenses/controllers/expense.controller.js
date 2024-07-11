@@ -25,7 +25,6 @@ exports.createExpense = (req, res) => {
       splitDetails,
       expenseImageFile,
     } = req.body;
-    console.log(expenseImageFile);
     const createNotifications = async (
       expenseId,
       group,
