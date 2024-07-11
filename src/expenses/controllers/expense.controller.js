@@ -2,6 +2,7 @@ const Expense = require("../models/expense");
 const Group = require("../../groups/models/group");
 const mongoose = require("mongoose");
 var User = mongoose.model("User");
+const { uploadImage } = require("../../utils/utils"); //
 const multer = require("multer");
 const Notification = require("../../notification/model/notification");
 const storage = multer.memoryStorage();
@@ -24,7 +25,7 @@ exports.createExpense = (req, res) => {
       splitDetails,
       expenseImageFile,
     } = req.body;
-
+    console.log(expenseImageFile);
     const createNotifications = async (
       expenseId,
       group,
