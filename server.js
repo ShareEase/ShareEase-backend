@@ -2,6 +2,8 @@ const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const passport = require("passport");
+const http = require("http");
+const socketIo = require("socket.io");
 
 require("./src/users/models/User");
 
@@ -12,7 +14,16 @@ const groupsRouter = require("./src/groups/group.routes");
 const expenseRouter = require("./src/expenses/expense.routes");
 const finverseRouter = require("./src/finverse/finverse.route");
 require("dotenv").config();
+
 const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
 app.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   if (req.method === "OPTIONS") {
@@ -24,6 +35,7 @@ app.use(function (req, res, next) {
     return next();
   }
 });
+
 app.use(
   bodyParser.urlencoded({
     extended: false,
@@ -49,10 +61,22 @@ app.use("/api/users", usersRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/notification", notificationRouter);
 app.use("/api/payment", finverseRouter);
+
 const port = process.env.PORT || 5000;
 
-app.listen(port, () => {
+server.listen(port, () => {
   if (process.env.NODE_ENV != "test") {
     console.log(`Server up and running on port ${port} !`);
   }
 });
+
+io.on("connection", (socket) => {
+  console.log("New client connected");
+  socket.on("disconnect", () => {
+    console.log("Client disconnected");
+  });
+});
+
+app.set('socketio', io);
+
+module.exports = app;

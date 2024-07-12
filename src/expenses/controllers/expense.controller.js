@@ -45,6 +45,10 @@ exports.createExpense = (req, res) => {
       }));
 
       await Notification.insertMany(notifications);
+      const io = req.app.get('socketio');
+      notifications.forEach(notification => {
+        io.to(notification.userId.toString()).emit('notification', notification);
+      });
     };
 
     const createExpenseRecord = async (imageUrl = null) => {

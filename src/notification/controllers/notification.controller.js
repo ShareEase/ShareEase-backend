@@ -89,6 +89,8 @@ exports.inviteUsers = async (req, res) => {
         });
 
         await notification.save();
+        const io = req.app.get('socketio');
+        io.to(user._id.toString()).emit('notification', notification);
         return { success: true, message: "Notification created" };
       } else {
         const data = await sendInviteMessage(numbers);
