@@ -3,6 +3,7 @@ const User = mongoose.model("User");
 const Group = require("../../groups/models/group");
 const Notification = require("../model/notification");
 const { sendInviteMessage } = require("../../utils/utils");
+const admin = require("../../utils/firebase");
 
 exports.getUserNotifications = async (req, res) => {
   const { userId } = req.params;
@@ -11,15 +12,15 @@ exports.getUserNotifications = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    
+
     const notifications = await Notification.find({ userId: userId })
       .populate({
-        path: 'groupId',
-        select: 'name creator_name tag groupImageFile'
+        path: "groupId",
+        select: "name creator_name tag groupImageFile",
       })
       .sort({ createdAt: -1 });
 
-    const responseNotifications = notifications.map(notification => ({
+    const responseNotifications = notifications.map((notification) => ({
       ...notification._doc,
       groupName: notification.groupId ? notification.groupId.name : null,
       userName: notification.groupId ? notification.groupId.creator_name : null,
@@ -50,7 +51,7 @@ exports.inviteUsers = async (req, res) => {
     if (!creator) {
       return res.status(404).json({ error: "Creator not found" });
     }
-    const normalizedNumbers = usersToInvite.map(numbers => {
+    const normalizedNumbers = usersToInvite.map((numbers) => {
       numbers = numbers.replace(/\s/g, "");
       if (!numbers.startsWith("+")) {
         if (numbers.startsWith("0")) {
@@ -61,7 +62,7 @@ exports.inviteUsers = async (req, res) => {
     });
 
     const users = await User.find({ phoneNumber: { $in: normalizedNumbers } });
-    const userIds = users.map(user => user._id);
+    const userIds = users.map((user) => user._id);
     const notifications = await Notification.find({
       userId: { $in: userIds },
       groupId,
@@ -71,14 +72,18 @@ exports.inviteUsers = async (req, res) => {
       if (numbers === creator.phoneNumber) {
         return { success: false, message: "You cannot invite yourself" };
       }
-      const user = users.find(user => user.phoneNumber === numbers);
+      const user = users.find((user) => user.phoneNumber === numbers);
       if (user) {
         const existingNotification = notifications.find(
-          notification => notification.userId.toString() === user._id.toString()
+          (notification) =>
+            notification.userId.toString() === user._id.toString()
         );
 
         if (existingNotification) {
-          return { success: false, message: "Notification already exists for this user" };
+          return {
+            success: false,
+            message: "Notification already exists for this user",
+          };
         }
 
         const notification = new Notification({
@@ -89,9 +94,18 @@ exports.inviteUsers = async (req, res) => {
         });
 
         await notification.save();
-        const io = req.app.get('socketio');
-        io.to(user._id.toString()).emit('notification', notification);
-        return { success: true, message: "Notification created" };
+
+        const message = {
+          notification: {
+            title: "Group Invitation",
+            body: `You have been invited to join the group ${group.name}`,
+          },
+          condition: `'${user._id.toString()}' in topics`,
+        };
+
+        await admin.messaging().send(message);
+
+        return { success: true, message: "Notification created and FCM sent" };
       } else {
         const data = await sendInviteMessage(numbers);
         return { success: true, message: "Invite sent via SMS/WhatsApp", data };
@@ -104,7 +118,6 @@ exports.inviteUsers = async (req, res) => {
     res.status(500).json({ error: "Error inviting users", err: error });
   }
 };
-
 
 exports.declineNotification = async (req, res) => {
   const { notificationId } = req.params;

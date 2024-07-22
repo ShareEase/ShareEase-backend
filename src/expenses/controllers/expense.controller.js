@@ -25,6 +25,7 @@ exports.createExpense = (req, res) => {
       splitDetails,
       expenseImageFile,
     } = req.body;
+
     const createNotifications = async (
       expenseId,
       group,
@@ -45,9 +46,17 @@ exports.createExpense = (req, res) => {
       }));
 
       await Notification.insertMany(notifications);
-      const io = req.app.get('socketio');
-      notifications.forEach(notification => {
-        io.to(notification.userId.toString()).emit('notification', notification);
+
+      notifications.forEach(async (notification) => {
+        const message = {
+          notification: {
+            title: "New Expense Added",
+            body: `A new expense "${description}" was created in the group "${group.name}"`,
+          },
+          condition: `'${notification.userId.toString()}' in topics`,
+        };
+
+        await admin.messaging().send(message);
       });
     };
 
