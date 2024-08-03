@@ -2,7 +2,7 @@ const Expense = require("../models/expense");
 const Group = require("../../groups/models/group");
 const mongoose = require("mongoose");
 var User = mongoose.model("User");
-const { uploadImage } = require("../../utils/utils"); //
+const { uploadImage } = require("../../utils/utils");
 const multer = require("multer");
 const Notification = require("../../notification/model/notification");
 const storage = multer.memoryStorage();
@@ -23,6 +23,7 @@ exports.createExpense = (req, res) => {
       dateOfExpense,
       groupId,
       notes,
+      creatorId,
       splitDetails,
       expenseImageFile,
     } = req.body;
@@ -33,18 +34,20 @@ exports.createExpense = (req, res) => {
       payer,
       splitDetails
     ) => {
-      const notifications = splitDetails.map((detail) => ({
-        userId: detail.user,
-        groupId: group._id,
-        expenseId,
-        creator: {
-          _id: payer._id,
-          name: payer.name,
-        },
-        alertType: "addedExpense",
-        message: `A new expense "${description}" was created in the group "${group.name}"`,
-        type: "alert",
-      }));
+      const notifications = splitDetails
+        .filter((detail) => String(detail.user) !== String(creatorId))
+        .map((detail) => ({
+          userId: detail.user,
+          groupId: group._id,
+          expenseId,
+          creator: {
+            _id: payer._id,
+            name: payer.name,
+          },
+          alertType: "addedExpense",
+          message: `A new expense "${description}" was created in the group "${group.name}"`,
+          type: "alert",
+        }));
 
       await Notification.insertMany(notifications);
       const message = {
@@ -65,7 +68,6 @@ exports.createExpense = (req, res) => {
               .sendEachForMulticast({
                 tokens: user.fcmTokens,
                 notification: message.notification,
-                // data: message.data,
                 apns: {
                   payload: {
                     aps: {
