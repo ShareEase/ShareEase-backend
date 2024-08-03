@@ -13,17 +13,19 @@ const FREE = config.permissionLevels.NORMAL_USER;
 router.get("/", [UsersController.list]);
 router.get("/:userId", [
   AuthMiddleware.validJWTNeeded,
-  UsersController.getById
+  UsersController.getById,
 ]);
 router.patch("/:userId", [
   AuthMiddleware.validJWTNeeded,
   PermissionsMiddleware.onlySameUserOrAdminCanDoThisAction,
-  UsersController.patchById
+  UsersController.patchById,
 ]);
 router.delete("/:userId", [
   AuthMiddleware.validJWTNeeded,
   PermissionsMiddleware.minimumPermissionLevelRequired(ADMIN),
-  UsersController.removeById
+  UsersController.removeById,
 ]);
+
+router.post("/fcmtoken/:userId", [UsersController.addFcmToken]);
 
 module.exports = router;

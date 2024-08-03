@@ -100,10 +100,25 @@ exports.inviteUsers = async (req, res) => {
             title: "Group Invitation",
             body: `You have been invited to join the group ${group.name}`,
           },
-          condition: `'${user._id.toString()}' in topics`,
+          data: {
+            type: "invite",
+            groupId: groupId,
+          },
         };
 
-        await admin.messaging().send(message);
+        await admin.messaging().sendEachForMulticast({
+          tokens: user.fcmTokens,
+          notification: message.notification,
+          data: message.data,
+          apns: {
+            payload: {
+              aps: {
+                "content-available": true,
+                priority: "high",
+              },
+            },
+          },
+        });
 
         return { success: true, message: "Notification created and FCM sent" };
       } else {

@@ -6,6 +6,7 @@ const { uploadImage } = require("../../utils/utils"); //
 const multer = require("multer");
 const Notification = require("../../notification/model/notification");
 const storage = multer.memoryStorage();
+const admin = require("../../utils/firebase");
 const upload = multer({ storage: storage }).single("expenseImageFile");
 
 exports.createExpense = (req, res) => {
@@ -46,17 +47,42 @@ exports.createExpense = (req, res) => {
       }));
 
       await Notification.insertMany(notifications);
-
+      const message = {
+        notification: {
+          title: "New Expense Added",
+          body: `A new expense "${description}" was created in the group "${group.name}"`,
+        },
+        data: {
+          type: "addedExpense",
+          groupId: group._id,
+        },
+      };
       notifications.forEach(async (notification) => {
-        const message = {
-          notification: {
-            title: "New Expense Added",
-            body: `A new expense "${description}" was created in the group "${group.name}"`,
-          },
-          condition: `'${notification.userId.toString()}' in topics`,
-        };
-
-        await admin.messaging().send(message);
+        User.findById(notification.userId).then(async (user) => {
+          if (user && user.fcmTokens && user.fcmTokens.length > 0) {
+            await admin
+              .messaging()
+              .sendEachForMulticast({
+                tokens: user.fcmTokens,
+                notification: message.notification,
+                // data: message.data,
+                apns: {
+                  payload: {
+                    aps: {
+                      "content-available": true,
+                      priority: "high",
+                    },
+                  },
+                },
+              })
+              .then((response) => {
+                console.log("Successfully sent notification:", response);
+              })
+              .catch((error) => {
+                console.log("Error sending notification:", error);
+              });
+          }
+        });
       });
     };
 

@@ -3,14 +3,14 @@ const mongoose = require("mongoose");
 var User = mongoose.model("User");
 
 exports.insert = (req, res) => {
-  User.findOne({ email: req.body.email }).then(user => {
+  User.findOne({ email: req.body.email }).then((user) => {
     if (user) {
       return res.status(400).json({ email: "Email already exists" });
     } else {
       const newUser = {
         name: req.body.name,
         email: req.body.email,
-        password: req.body.password
+        password: req.body.password,
       };
 
       bcrypt.genSalt(10, (err, salt) => {
@@ -18,13 +18,13 @@ exports.insert = (req, res) => {
           if (err) throw err;
           newUser.password = hash;
           User.create(newUser)
-            .then(user => {
+            .then((user) => {
               let userobject = user.toObject();
 
               delete userobject.password;
               res.json(userobject);
             })
-            .catch(function(error) {
+            .catch(function (error) {
               throw err;
             });
         });
@@ -59,13 +59,13 @@ exports.loginOAuth = (
           familyname: familyName,
           profilePicture: picture,
           email: email,
-          permissionLevel: 0
+          permissionLevel: 0,
         };
         User.create(newUser0Auth)
-          .then(user => {
+          .then((user) => {
             cb_success(user);
           })
-          .catch(function(error) {
+          .catch(function (error) {
             cb_fail(error);
           });
       }
@@ -83,17 +83,17 @@ exports.list = (req, res) => {
       page = Number.isInteger(req.query.page) ? req.query.page : 0;
     }
   }
-  User.list(limit, page).then(result => {
+  User.list(limit, page).then((result) => {
     res.status(200).send(result);
   });
 };
 
 exports.getById = (req, res) => {
   User.findById(req.params.userId)
-    .then(result => {
+    .then((result) => {
       return res.status(200).send(result);
     })
-    .catch(err => {
+    .catch((err) => {
       return res
         .status(400)
         .send({ error: "Error. Probably Wrong id.", err: err });
@@ -110,27 +110,54 @@ exports.patchById = (req, res) => {
         if (err) throw err;
         newUser.password = hash;
 
-        User.patch(req.params.userId, newUser).then(result => {
+        User.patch(req.params.userId, newUser).then((result) => {
           res.status(200).send({
             success: true,
             message: "Password changed",
-            result: result
+            result: result,
           });
         });
       });
     });
   } else {
-    User.patch(req.params.userId, req.body).then(result => {
+    User.patch(req.params.userId, req.body).then((result) => {
       res.status(200).send({
         success: true,
         message: "User updated",
-        result: result
+        result: result,
       });
     });
   }
 };
 exports.removeById = (req, res) => {
-  User.removeById(req.params.userId).then(result => {
+  User.removeById(req.params.userId).then((result) => {
     res.status(200).send({});
+  });
+};
+
+exports.addFcmToken = (req, res) => {
+  const userId = req.params.userId;
+  const fcmToken = req.body.fcmToken;
+  if (!fcmToken || !userId) {
+    return res
+      .status(400)
+      .json({ message: "Invalid request parameters or body" });
+  }
+  User.findById(userId).then((user) => {
+    if (user) {
+      const tokenIndex = user.fcmTokens.findIndex(
+        (token) => token === fcmToken
+      );
+      if (tokenIndex !== -1) {
+        user.fcmTokens[tokenIndex] = fcmToken; // Update the existing token
+      } else {
+        user.fcmTokens.push(fcmToken); // Add the new token
+      }
+      user.save().then((result) => {
+        return res.status(200).json({ message: "Token added", result });
+      });
+    } else {
+      return res.status(400).json({ message: "User not found" });
+    }
   });
 };
