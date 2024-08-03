@@ -1,42 +1,53 @@
 const Validator = require("validator");
 const isEmpty = require("is-empty");
+const User = require("../models/User"); // Ensure you have this model
 
-module.exports = function validateRegisterInput(data) {
+module.exports = async function validateRegisterInput(data) {
   let errors = {};
 
-  // Convert empty fields to an empty string so we can use validator functions
   data.name = !isEmpty(data.name) ? data.name : "";
+  data.username = !isEmpty(data.username) ? data.username : "";
   data.email = !isEmpty(data.email) ? data.email : "";
   data.password = !isEmpty(data.password) ? data.password : "";
   data.password2 = !isEmpty(data.password2) ? data.password2 : "";
-
-  // Name checks
   if (Validator.isEmpty(data.name)) {
-    errors.auth = "Name field is required";
+    errors.name = "Name field is required";
   }
 
-  // Email checks
+  if (Validator.isEmpty(data.username)) {
+    errors.username = "Username field is required";
+  } else {
+    const user = await User.findOne({ username: data.username });
+    if (user) {
+      errors.username = "Username already exists";
+    }
+  }
+
   if (Validator.isEmpty(data.email)) {
-    errors.auth = "Email field is required";
+    errors.email = "Email field is required";
   } else if (!Validator.isEmail(data.email)) {
-    errors.auth = "Email is invalid";
+    errors.email = "Email is invalid";
+  } else {
+    const user = await User.findOne({ email: data.email });
+    if (user) {
+      errors.email = "Email already exists";
+    }
   }
 
-  // Password checks
   if (Validator.isEmpty(data.password)) {
-    errors.auth = "Password field is required";
+    errors.password = "Password field is required";
   }
 
   if (Validator.isEmpty(data.password2)) {
-    errors.auth = "Confirm password field is required";
+    errors.password2 = "Confirm password field is required";
   }
 
   if (!Validator.isLength(data.password, { min: 6, max: 30 })) {
-    errors.auth = "Password must be at least 6 characters";
+    errors.password = "Password must be at least 6 characters";
   }
 
   if (!Validator.equals(data.password, data.password2)) {
-    errors.auth = "Passwords must match";
+    errors.password2 = "Passwords must match";
   }
 
   return {

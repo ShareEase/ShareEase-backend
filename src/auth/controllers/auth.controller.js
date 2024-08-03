@@ -3,11 +3,11 @@ const jwt = require("jsonwebtoken");
 const validateRegisterInput = require("../validation/register");
 const validateLoginInput = require("../validation/login");
 const passport = require("passport");
+const Validator = require("validator");
 const mongoose = require("mongoose");
 var User = mongoose.model("User");
 const UsersController = require("../../users/controllers/users.controller");
 require("dotenv").config();
-const { UniClient } = require("uni-sdk");
 const { verifyOTP, sendOTP } = require("../../utils/utils");
 
 exports.generateTokens = (user) => {
@@ -76,57 +76,52 @@ exports.registerUser = (req, res) => {
   return UsersController.insert(req, res);
 };
 
-exports.loginUser = (req, res) => {
+exports.loginUser = async (req, res) => {
   const { errors, isValid } = validateLoginInput(req.body);
 
   if (!isValid) {
     return res.status(400).json(errors);
   }
 
-  const email = req.body.email;
+  const emailOrUsername = req.body.email;
   const password = req.body.password;
+  const query = Validator.isEmail(emailOrUsername) ? { email: emailOrUsername } : { username: emailOrUsername };
 
-  User.findOne({ email })
-    .select("+password")
-    .then((user) => {
-      if (!user) {
-        return res.status(404).json({ auth: "Email not found" });
-      }
-      bcrypt.compare(password, user.password).then((isMatch) => {
-        if (isMatch) {
-          const payload = {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            profilePicture: user.profilePicture,
-            permissionLevel: user.permissionLevel,
-            phoneNumberVerified: user.phoneNumberVerified,
-          };
-          this.generateTokens(payload)
-            .then(([token]) => {
-              User.findByIdAndUpdate(user.id, { token: token }, { new: true })
-                .then((updatedUser) => {
-                  res.status(200).json({
-                    success: true,
-                    message: "User logged in successfully",
-                    token: "Bearer " + token,
-                    user: updatedUser,
-                  });
-                })
-                .catch((err) => {
-                  return res
-                    .status(500)
-                    .json({ error: "Error saving token", err: err });
-                });
-            })
-            .catch((err) => {
-              return res.status(400).send({ error: "Error", err: err });
-            });
-        } else {
-          return res.status(400).send({ error: "Password incorrect" });
-        }
+  try {
+    const user = await User.findOne(query).select("+password");
+
+    if (!user) {
+      return res.status(404).json({ auth: "User not found" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (isMatch) {
+      const payload = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        profilePicture: user.profilePicture,
+        permissionLevel: user.permissionLevel,
+        phoneNumberVerified: user.phoneNumberVerified,
+      };
+
+      const [token] = await this.generateTokens(payload);
+
+      const updatedUser = await User.findByIdAndUpdate(user.id, { token: token }, { new: true });
+
+      return res.status(200).json({
+        success: true,
+        message: "User logged in successfully",
+        token: "Bearer " + token,
+        user: updatedUser,
       });
-    });
+    } else {
+      return res.status(400).send({ error: "Password incorrect" });
+    }
+  } catch (err) {
+    return res.status(500).json({ error: "Error processing login", err: err });
+  }
 };
 
 exports.loginGoogle = (req, res, next) => {
@@ -292,4 +287,19 @@ exports.verifyCode = (req, res) => {
     .catch((err) => {
       res.status(500).json({ error: "Server error", details: err });
     });
+};
+exports.checkUsernameExists = async (req, res) => {
+  const { username } = req.body;
+
+  try {
+    const user = await User.findOne({ username });
+
+    if (user) {
+      return res.status(400).json({ exists: true, message: "Username already exists" });
+    } else {
+      return res.status(200).json({ exists: false, message: "Username available" });
+    }
+  } catch (err) {
+    return res.status(500).json({ error: "Server error", details: err });
+  }
 };

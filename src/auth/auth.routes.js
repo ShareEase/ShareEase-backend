@@ -20,6 +20,8 @@ router.get("/facebook/callback", AuthController.loginFacebook);
 router.post("/register", AuthController.registerUser);
 router.post("/googleLoginStore", AuthController.loginGoogleStore);
 router.post("/login", AuthController.loginUser);
+router.post('/checkUsername', AuthController.checkUsernameExists);
+
 
 router.post("/refresh", [
   AuthMiddleware.JwtNeeded,
@@ -28,10 +30,7 @@ router.post("/refresh", [
   AuthController.refresh_token,
 ]);
 
-router.post(
-  "/phoneNumber",
-  AuthController.addPhoneNumberAndSendOtp
-);
+router.post("/phoneNumber", AuthController.addPhoneNumberAndSendOtp);
 router.post("/verifyCode", AuthController.verifyCode);
 
 module.exports = router;
