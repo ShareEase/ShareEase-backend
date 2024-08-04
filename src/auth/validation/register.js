@@ -1,6 +1,6 @@
 const Validator = require("validator");
 const isEmpty = require("is-empty");
-const User = require("../models/User"); // Ensure you have this model
+const User = require("../../users/models/User");
 
 module.exports = async function validateRegisterInput(data) {
   let errors = {};
