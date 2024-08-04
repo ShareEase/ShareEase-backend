@@ -1,6 +1,7 @@
 const Validator = require("validator");
 const isEmpty = require("is-empty");
-const User = require("../../users/models/User");
+var mongoose = require("mongoose");
+var User = mongoose.model("User");
 
 module.exports = async function validateRegisterInput(data) {
   let errors = {};

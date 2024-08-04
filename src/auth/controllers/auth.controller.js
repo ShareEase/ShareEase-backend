@@ -66,8 +66,8 @@ exports.refresh_token = (req, res) => {
   }
 };
 
-exports.registerUser = (req, res) => {
-  const { errors, isValid } = validateRegisterInput(req.body);
+exports.registerUser = async (req, res) => {
+  const { errors, isValid } = await validateRegisterInput(req.body);
 
   if (!isValid) {
     return res.status(400).json(errors);
