@@ -62,7 +62,7 @@ exports.getFinverseToken = async () => {
         const response = await axios(config);
         return response.data;
     } catch (error) {
-        throw new Error(error.response.data.error.details);
+        return error;
     }
 };
 
@@ -98,7 +98,7 @@ exports.createPaymentAccount = async ({token, account_number, name, institution_
       const response = await axios(config);
       return response.data;
   } catch (error) {
-      throw new Error(error.response.data.error.details);
+    return error;
   }
 };
 
@@ -142,7 +142,7 @@ exports.createMandateLink = async ({token, currency, redirect_uri, sender, uniqu
       const response = await axios(config);
       return response.data;
   } catch (error) {
-      throw new Error(error.response.data.error.details);
+    return error;
   }
 };
 
@@ -165,7 +165,7 @@ exports.getMandate = async ({token, payment_link_id}) => {
         const response = await axios(config);
         return response.data;
     } catch (error) {
-        throw new Error(error.response.data.error.details);
+        return error;
     }
 };
 

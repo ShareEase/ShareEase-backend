@@ -45,7 +45,7 @@ exports.createPaymentUser = async (req, res) => {
   } catch (error) {
     res.json({
       error: "Error creating payment user",
-      details: error.response ? error.response.data : error.message,
+      details: error,
     });
   }
 };
@@ -80,7 +80,7 @@ exports.createUserPaymentAccount = async (req, res) => {
   } catch (error) {
     res.json({
       error: "Error creating payment user",
-      details: error.response ? error.response.data : error.message,
+      details: error,
     });
   }
 };
@@ -126,7 +126,7 @@ exports.createMandateLink = async (req, res) => {
   } catch (error) {
     res.json({
       error: "Error creating mandate link",
-      details: error.response ? error.response.data : error.message,
+      details: error,
     });
   }
 };
@@ -156,7 +156,7 @@ exports.getMendateInfo = async (req, res) => {
   } catch (error) {
     res.json({
       error: "Error fetching mandate info",
-      details: error.response ? error.response.data : error.message,
+      details: error,
     });
   }
 }
