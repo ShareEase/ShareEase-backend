@@ -164,7 +164,7 @@ const paymentUserSchema = new Schema(
     },
     payment_link_id: {
       type: String,
-      required: true,
+      required: false,
     },
     url: {
       type: String,

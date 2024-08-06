@@ -21,6 +21,8 @@ exports.createPaymentUser = async (req, res) => {
   try {
     const userId = await getUserIdFromReq(req);
     const token = await getFinverseToken();
+    console.log("token", token,userId);
+    
     const paymentUserData = await createPaymentUser({
       token,
       email,
@@ -35,7 +37,14 @@ exports.createPaymentUser = async (req, res) => {
         email,
       },
     };
-
+    if (paymentUserData.error) {
+      return res.json({
+        error: "Error creating payment user",
+        details: paymentUserData.error,
+      });
+      
+    }
+    
     const paymentUser = new Finverse(payload);
     await paymentUser.save();
     return res.json({
@@ -68,6 +77,12 @@ exports.createUserPaymentAccount = async (req, res) => {
     const payload = {
       finverseUserAccountDetails: userAccountData,
     };
+    if (userAccountData.error) {
+      return res.json({
+        error: "Error creating payment user",
+        details: userAccountData.error,
+      });
+    }
     const updatedfinverseUser = await Finverse.findOneAndUpdate(
       { user: userId },
       payload,
@@ -111,6 +126,12 @@ exports.createMandateLink = async (req, res) => {
       sender,
       unique_reference_id: userId,
     });
+    if (mandateLinkData.error) {
+      return res.json({
+        error: "Error creating mandate link",
+        details: mandateLinkData.error
+      });
+    }
     const updatedfinverseUser = await Finverse.findOneAndUpdate(
       { user: userId },
       {
@@ -142,6 +163,12 @@ exports.getMendateInfo = async (req, res) => {
       token,
       payment_link_id: finversUser.payment_link_id,
     });
+    if (mandateInfo.error) {
+      return res.json({
+        error: "Error fetching mandate info",
+        details: mandateInfo.error,
+      });
+    }
     const updatedfinverseUser = await Finverse.findOneAndUpdate(
       { user: userId },
       {

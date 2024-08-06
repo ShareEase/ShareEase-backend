@@ -30,7 +30,7 @@ exports.getFinverseToken = async () => {
       finverseToken = response.data.access_token;
       return finverseToken;
     } catch (error) {
-      return error;
+        return error.response.data;
     }
   };
 
@@ -51,7 +51,6 @@ exports.getFinverseToken = async () => {
         method: "post",
         url: `${process.env.FINVERSE_API_HOST}/payment_users/`,
         headers: {
-            "X-Request-Id": uuid(),
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`
         },
@@ -59,10 +58,14 @@ exports.getFinverseToken = async () => {
     };
 
     try {
+        console.log(payload, 'payload');
+        
         const response = await axios(config);
+        console.log("response", response);
+        
         return response.data;
     } catch (error) {
-        return error;
+        return error.response.data;
     }
 };
 
@@ -98,7 +101,7 @@ exports.createPaymentAccount = async ({token, account_number, name, institution_
       const response = await axios(config);
       return response.data;
   } catch (error) {
-    return error;
+    return error.response.data;
   }
 };
 
@@ -142,7 +145,7 @@ exports.createMandateLink = async ({token, currency, redirect_uri, sender, uniqu
       const response = await axios(config);
       return response.data;
   } catch (error) {
-    return error;
+    return error.response.data;
   }
 };
 
@@ -165,7 +168,7 @@ exports.getMandate = async ({token, payment_link_id}) => {
         const response = await axios(config);
         return response.data;
     } catch (error) {
-        return error;
+        return error.response.data;
     }
 };
 
