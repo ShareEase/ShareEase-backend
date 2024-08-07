@@ -9,6 +9,7 @@ var User = mongoose.model("User");
 const UsersController = require("../../users/controllers/users.controller");
 require("dotenv").config();
 const { verifyOTP, sendOTP } = require("../../utils/utils");
+const finverse = require("../../finverse/models/finverse");
 
 exports.generateTokens = (user) => {
   return new Promise((resolve, reject) => {
@@ -109,12 +110,18 @@ exports.loginUser = async (req, res) => {
       const [token] = await this.generateTokens(payload);
 
       const updatedUser = await User.findByIdAndUpdate(user.id, { token: token }, { new: true });
-
+      let finverseDetails;
+      try {
+        finverseDetails = await finverse.findOne({ user: mongoose.Types.ObjectId(updatedUser._id) }).select('_id finversePaymentLinkDetails.status finversePaymentLinkDetails.session_status') || [];
+      } catch (error) {
+        finverseDetails = [];
+      }
       return res.status(200).json({
         success: true,
         message: "User logged in successfully",
         token: "Bearer " + token,
         user: updatedUser,
+        finverseDetails: finverseDetails,
       });
     } else {
       return res.status(400).send({ error: "Password incorrect" });

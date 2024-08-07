@@ -1,5 +1,6 @@
 const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
+const finverse = require("../../finverse/models/finverse");
 var User = mongoose.model("User");
 
 exports.insert = (req, res) => {
@@ -88,16 +89,28 @@ exports.list = (req, res) => {
   });
 };
 
-exports.getById = (req, res) => {
-  User.findById(req.params.userId)
-    .then((result) => {
-      return res.status(200).send(result);
-    })
-    .catch((err) => {
-      return res
-        .status(400)
-        .send({ error: "Error. Probably Wrong id.", err: err });
+exports.getById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    if (!user) {
+      return res.status(404).send({ error: "User not found" });
+    }
+    let finverseDetails;
+    console.log(req.params.userId);
+    
+    try {
+      finverseDetails = await finverse.findOne({ user: mongoose.Types.ObjectId(req.params.userId) }).select('_id finversePaymentLinkDetails.status finversePaymentLinkDetails.session_status') || [];
+    } catch (error) {
+      finverseDetails = [];
+    }
+
+    return res.status(200).send({
+      user: user,
+      finverseDetails: finverseDetails,
     });
+  } catch (err) {
+    return res.status(400).send({ error: "Error. Probably Wrong id.", err: err });
+  }
 };
 
 exports.patchById = (req, res) => {
