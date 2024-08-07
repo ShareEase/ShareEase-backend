@@ -8,6 +8,7 @@ const {
   createPaymentAccount,
   createMandateLink,
   getMandate,
+  getInstitutions,
 } = require("../../utils/finverse");
 
 exports.createPaymentUser = async (req, res) => {
@@ -21,8 +22,6 @@ exports.createPaymentUser = async (req, res) => {
   try {
     const userId = await getUserIdFromReq(req);
     const token = await getFinverseToken();
-    console.log("token", token,userId);
-    
     const paymentUserData = await createPaymentUser({
       token,
       email,
@@ -183,6 +182,37 @@ exports.getMendateInfo = async (req, res) => {
   } catch (error) {
     res.json({
       error: "Error fetching mandate info",
+      details: error,
+    });
+  }
+}
+
+exports.getInstitutions = async (req, res) => {
+  try {
+    const token = await getFinverseToken();
+    const institutions = await getInstitutions(token);
+    if (institutions.error) {
+      return res.json({
+        error: "Error fetching institutions",
+        details: institutions.error,
+      });
+    }
+    const requiredResponse = institutions.map((institution) => {
+      return {
+        institution_id: institution.institution_id,
+        institution_name: institution.institution_name,
+        color: institution.color,
+        user_type: institution.user_type,
+      };
+    });
+      
+    return res.json({
+      message: "Institutions fetched successfully",
+      data: requiredResponse,
+    });
+  } catch (error) {
+    res.json({
+      error: "Error fetching institutions",
       details: error,
     });
   }

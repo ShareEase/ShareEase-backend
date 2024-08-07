@@ -58,10 +58,8 @@ exports.getFinverseToken = async () => {
     };
 
     try {
-        console.log(payload, 'payload');
         
         const response = await axios(config);
-        console.log("response", response);
         
         return response.data;
     } catch (error) {
@@ -157,6 +155,28 @@ exports.getMandate = async ({token, payment_link_id}) => {
     const config = {
         method: "get",
         url: `${process.env.FINVERSE_API_HOST}/payment_links/${payment_link_id}`,
+        headers: {
+            "X-Request-Id": uuid(),
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+        },
+    };
+
+    try {
+        const response = await axios(config);
+        return response.data;
+    } catch (error) {
+        return error.response.data;
+    }
+};
+exports.getInstitutions = async (token) => {
+    if (!token) {
+        throw new Error("Missing required parameters");
+    }
+
+    const config = {
+        method: "get",
+        url: `${process.env.FINVERSE_API_HOST}/institutions`,
         headers: {
             "X-Request-Id": uuid(),
             "Content-Type": "application/json",

@@ -21,6 +21,10 @@ router.get('/getMandate', [
   AuthMiddleware.validJWTNeeded,
   PaymentUserController.getMendateInfo,
 ]);
+router.get('/getInstitutions', [
+  AuthMiddleware.validJWTNeeded,
+  PaymentUserController.getInstitutions,
+]);
 
 
 
