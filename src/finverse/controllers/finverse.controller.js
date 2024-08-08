@@ -191,10 +191,12 @@ exports.getInstitutions = async (req, res) => {
   try {
     const token = await getFinverseToken();
     const institutions = await getInstitutions(token);
+    console.log(institutions);
+    
     if (institutions.error) {
       return res.json({
         error: "Error fetching institutions",
-        details: institutions.error,
+        details: institutions,
       });
     }
     const requiredResponse = institutions.map((institution) => {
@@ -205,7 +207,7 @@ exports.getInstitutions = async (req, res) => {
         user_type: institution.user_type,
       };
     });
-      
+    console.log(requiredResponse);
     return res.json({
       message: "Institutions fetched successfully",
       data: requiredResponse,
