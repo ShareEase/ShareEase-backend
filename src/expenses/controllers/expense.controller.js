@@ -1,10 +1,11 @@
+const mongoose = require("mongoose");
 const Expense = require("../models/expense");
 const Group = require("../../groups/models/group");
-const mongoose = require("mongoose");
-var User = mongoose.model("User");
-const { uploadImage } = require("../../utils/utils");
+const User = mongoose.model("User");
+const { uploadImage, calculateBalances } = require("../../utils/utils");
 const multer = require("multer");
 const Notification = require("../../notification/model/notification");
+const { logGroupActivity } = require("../../utils/groupLogs");
 const storage = multer.memoryStorage();
 const admin = require("../../utils/firebase");
 const upload = multer({ storage: storage }).single("expenseImageFile");
@@ -199,6 +200,21 @@ exports.createExpense = (req, res) => {
           .populate("splitDetails.user", "name")
           .populate("groupId", "name");
 
+        const balancesAllTime = await calculateBalances(groupId);
+        const balancesThisMonth = await calculateBalances(groupId, true);
+
+        await logGroupActivity(groupId, "Expense created", creatorId, {
+          description,
+          amount,
+          paid_by: payer.name,
+          splittingType,
+          dateOfExpense,
+          notes,
+          splitDetails: calculatedSplitDetails,
+          balancesAllTime,
+          balancesThisMonth,
+        });
+
         res.status(201).json({
           success: true,
           message: "Expense created successfully and added to the group",
@@ -241,6 +257,22 @@ exports.getExpense = async (req, res) => {
     if (!expense) {
       return res.status(404).json({ error: "Expense not found" });
     }
+
+    const balancesAllTime = await calculateBalances(expense.groupId);
+    const balancesThisMonth = await calculateBalances(expense.groupId, true);
+
+    await logGroupActivity(expense.groupId, "Fetched expense details", req.user._id, {
+      expenseId: expense._id,
+      description: expense.description,
+      amount: expense.amount,
+      paid_by: expense.paid_by.name,
+      splittingType: expense.splittingType,
+      dateOfExpense: expense.dateOfExpense,
+      notes: expense.notes,
+      splitDetails: expense.splitDetails,
+      balancesAllTime,
+      balancesThisMonth,
+    });
 
     res.status(200).json({
       success: true,

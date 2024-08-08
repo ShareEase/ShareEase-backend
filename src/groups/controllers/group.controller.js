@@ -5,6 +5,8 @@ const { uploadImage } = require("../../utils/utils"); // hypothetical image uplo
 const User = mongoose.model("User");
 const multer = require("multer");
 const Expense = require("../../expenses/models/expense");
+const { logGroupActivity } = require("../../utils/groupLogs");
+
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage }).single("groupImageFile");
@@ -47,6 +49,7 @@ exports.create = (req, res) => {
           ...group.toObject(),
           members: groupMembers,
         };
+        await logGroupActivity(group._id, "Group created", creator_id, { name, tag });
         res.status(201).json({
           success: true,
           message: "Group created successfully",
@@ -142,7 +145,7 @@ exports.update = (req, res) => {
           ...updatedGroup.toObject(),
           members: groupMembers,
         };
-
+        await logGroupActivity(groupId, "Group updated", req.user._id, updatedGroupBody);
         res.status(200).json({
           success: true,
           message: "Group updated successfully",
@@ -204,7 +207,7 @@ exports.remove = async (req, res) => {
         },
       },
     ]);
-
+    await logGroupActivity(groupId, "Group removed", creator_id);
     res.status(200).json({
       success: true,
       message: "Group deleted successfully",
@@ -261,6 +264,7 @@ exports.acceptInvite = async (req, res) => {
         isCreator: member._id.toString() === updatedGroup.creator_id.toString(),
       })),
     };
+    await logGroupActivity(groupId, "User accepted invite", userId);
 
     res.status(200).json({
       success: true,
@@ -317,6 +321,7 @@ exports.kickUser = async (req, res) => {
         isCreator: member._id.toString() === updatedGroup.creator_id.toString(),
       })),
     };
+    await logGroupActivity(groupId, "User kicked", req.user._id, { kickedUser: userId });
 
     res.status(200).json({
       success: true,
@@ -369,6 +374,7 @@ exports.LeaveGroup = async (req, res) => {
         isCreator: member._id.toString() === updatedGroup.creator_id.toString(),
       })),
     };
+    await logGroupActivity(groupId, "User left group", userId);
 
     res.status(200).json({
       success: true,
@@ -381,5 +387,18 @@ exports.LeaveGroup = async (req, res) => {
       details: err.message,
       stack: err.stack,
     });
+  }
+};
+
+exports.getGroupLogs = async (req, res) => {
+  const { groupId } = req.params;
+  try {
+    const logs = await getGroupLogs(groupId);
+    res.status(200).json({
+      success: true,
+      logs,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Error fetching logs", err });
   }
 };
