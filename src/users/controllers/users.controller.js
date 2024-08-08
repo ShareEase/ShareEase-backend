@@ -99,9 +99,9 @@ exports.getById = async (req, res) => {
     console.log(req.params.userId);
     
     try {
-      finverseDetails = await finverse.findOne({ user: mongoose.Types.ObjectId(req.params.userId) }).select('_id finversePaymentLinkDetails.status finversePaymentLinkDetails.session_status') || [];
+      finverseDetails = await finverse.findOne({ user: mongoose.Types.ObjectId(req.params.userId) }).select('_id finversePaymentLinkDetails.status finversePaymentLinkDetails.session_status') || {};
     } catch (error) {
-      finverseDetails = [];
+      finverseDetails = {};
     }
 
     return res.status(200).send({

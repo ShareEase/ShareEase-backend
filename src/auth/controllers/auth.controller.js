@@ -112,9 +112,9 @@ exports.loginUser = async (req, res) => {
       const updatedUser = await User.findByIdAndUpdate(user.id, { token: token }, { new: true });
       let finverseDetails;
       try {
-        finverseDetails = await finverse.findOne({ user: mongoose.Types.ObjectId(updatedUser._id) }).select('_id finversePaymentLinkDetails.status finversePaymentLinkDetails.session_status') || [];
+        finverseDetails = await finverse.findOne({ user: mongoose.Types.ObjectId(updatedUser._id) }).select('_id finversePaymentLinkDetails.status finversePaymentLinkDetails.session_status') || {};
       } catch (error) {
-        finverseDetails = [];
+        finverseDetails = {};
       }
       return res.status(200).json({
         success: true,
@@ -201,9 +201,16 @@ const updateUserAndRespond = async (user, token, id, res) => {
     user.refresh_token = refreshToken;
     user.OAuthId = id;
     await user.save();
+    let finverseDetails;
+    
+    try {
+      finverseDetails = await finverse.findOne({ user: mongoose.Types.ObjectId(req.params.userId) }).select('_id finversePaymentLinkDetails.status finversePaymentLinkDetails.session_status') || {};
+    } catch (error) {
+      finverseDetails = {};
+    }
     return res
       .status(200)
-      .send({ message: "User logged in successfully", user });
+      .send({ message: "User logged in successfully", user,finverseDetails });
   } catch (err) {
     return res.status(400).send({ error: "Error", err });
   }
