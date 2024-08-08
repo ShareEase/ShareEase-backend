@@ -58,7 +58,7 @@ exports.validJWTNeeded = async (req, res, next) => {
         if (!user) {
           return res.status(404).send({ error: "User not found" });
         }
-        if (!user.phoneNumber || !user.code) {
+        if (!user.phoneNumber || !user.code || !user.phoneNumberVerified) {
           return res
             .status(400)
             .send({ error: "Please verify your Phone Number and try again" });
