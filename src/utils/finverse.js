@@ -113,6 +113,7 @@ exports.createMandateLink = async ({token, currency, redirect_uri, sender, uniqu
       link_customizations: {
           language: "en",
           link_mode: "",
+          ui_mode: "redirect",
           redirect_uri: redirect_uri ? redirect_uri : "",
       },
       mode: "SETUP",

@@ -256,6 +256,12 @@ exports.addPhoneNumberAndSendOtp = (req, res) => {
       user.phoneNumber = phoneNumber;
       user.save().then(async (updatedUser) => {
         const verification = await sendOTP(phoneNumber);
+        if (verification) {
+          return res.status(200).json({
+            message: "OTP sent successfully",
+            user: updatedUser,
+          });
+        }
       });
     })
     .catch((err) => {
@@ -273,13 +279,12 @@ exports.verifyCode = (req, res) => {
         return res.status(404).json({ auth: "User not found" });
       }
 
-      const verification = await verifyOTP(phoneNumber);
-
-      if (!verification.valid) {
+      const verification = await verifyOTP(phoneNumber, code);
+      if (!verification) {
         return res.status(400).json({ message: "Invalid OTP" });
       }
 
-      if (verification.valid) {
+      if (verification) {
         user.code = code;
         user.phoneNumberVerified = true;
 
