@@ -5,7 +5,7 @@ const { uploadImage } = require("../../utils/utils"); // hypothetical image uplo
 const User = mongoose.model("User");
 const multer = require("multer");
 const Expense = require("../../expenses/models/expense");
-const { logGroupActivity } = require("../../utils/groupLogs");
+const { logGroupActivity, getGroupLogs } = require("../../utils/groupLogs");
 
 
 const storage = multer.memoryStorage();
