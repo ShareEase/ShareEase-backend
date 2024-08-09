@@ -12,6 +12,7 @@ exports.insert = (req, res) => {
         name: req.body.name,
         email: req.body.email,
         password: req.body.password,
+        username: req.body.username,
       };
 
       bcrypt.genSalt(10, (err, salt) => {
@@ -84,9 +85,35 @@ exports.list = (req, res) => {
       page = Number.isInteger(req.query.page) ? req.query.page : 0;
     }
   }
-  User.list(limit, page).then((result) => {
-    res.status(200).send(result);
-  });
+
+  let filter = {};
+  if (req.query.filter) {
+    const filterValue = req.query.filter.trim();
+    filter = {
+      $or: [
+        { username: { $regex: filterValue, $options: 'i' } },
+        { email: { $regex: filterValue, $options: 'i' } }
+      ]
+    };
+  }
+
+  console.log(`Query: Limit = ${limit}, Page = ${page}, Filter =`, filter);
+
+ const users = User.find(filter)
+  .limit(limit)
+  .skip(limit * page)
+  .exec();
+
+  const count = User.countDocuments(filter).exec();
+
+  return Promise.all([users, count])
+    .then((results) => {
+      return res.status(200).send({ users: results[0], count: results[1] });
+    })
+    .catch((err) => {
+      return res.status(400).send({ error: "Error" });
+    });
+  
 };
 
 exports.getById = async (req, res) => {
